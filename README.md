@@ -1,9 +1,12 @@
-# BabylonJs + vite Boilerplate
+# Dungeon Roll - Tabletop JRPG Engine
 
 ## Description
 
-This is a BabylonJS + vite minimal boilerplate for development and production to work with **typescript**. 
-It starts faster than webpack and allow debugging from vscode.
+A web-based tabletop JRPG engine inspired by Crimson Shroud, built with:
+- **Vite** + **TypeScript** + **Babylon.js**
+- Finite state machine architecture (TITLE → MAP → EVENT → COMBAT → REWARD → MAP)
+- Separation of pure rules logic from rendering
+- Data-driven content system
 
 ## instructions
 
@@ -28,20 +31,28 @@ Production preview runs at http://localhost:5000/ . The terminal will display ex
 
 ## File Structure
 
-### /index.html
-This file is used as a template by vite to create the actual **index.html** that will be served to the client.
+```
+src/
+  main.ts              # Entry point - initializes engine, scene, UI, and game
+  game/
+    Game.ts            # Pure game logic orchestrator (no Babylon dependencies)
+    stateMachine.ts    # Finite state machine implementation
+  render/
+    createScene.ts     # Babylon.js scene setup (diorama board)
+  ui/
+    createUI.ts        # DOM-based UI overlay
+  content/
+    *.json             # Data-driven content (enemies, skills, items, rooms)
+```
 
-### /public
-This folder contains your html asset. The files in this folder are served by the test webserver as root files.
+## Phase 1 Features
 
-### /src 
-This is where you should place all your application code.
-
-### /src/main.ts
-This is the entry point of the app. 
-
-### /src/AppOne.ts
-A sample app that copy the code from the babylon.js playground.
+- ✓ Babylon.js scene with diorama board (ground + lighting + isometric camera)
+- ✓ Finite state machine (TITLE → MAP → EVENT → COMBAT → REWARD → MAP)
+- ✓ UI overlay showing current state
+- ✓ "Advance State" button to cycle through states
+- ✓ Clean separation: rules engine never imports Babylon
+- ✓ Ready for data-driven content in `/src/content/`
 
 ## Thank you!
 
