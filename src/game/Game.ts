@@ -1,5 +1,5 @@
 // Pure game logic orchestrator - no Babylon imports allowed
-import { createStateMachine, StateMachine, GameState } from './stateMachine';
+import { createStateMachine, StateMachine, GameState, GameEvent, RunContext } from './stateMachine';
 import { UI } from '../ui/createUI';
 
 export interface GameConfig {
@@ -17,15 +17,26 @@ export class Game {
     this.onStateChangeCallback = config.onStateChange;
     this.stateMachine = createStateMachine('TITLE');
 
-    // Wire up UI button to advance state
-    this.ui.onAdvance(() => this.advance());
+    // Wire up UI button to semantic state events
+    this.ui.onAdvance(() => {
+      const event = this.getDefaultEventForCurrentState();
+      if (event) {
+        this.dispatch(event);
+      }
+    });
 
     // Initialize UI with current state
     this.ui.updateState(this.stateMachine.currentState);
   }
 
-  advance(): void {
-    this.stateMachine.advance();
+  dispatch(event: GameEvent): void {
+    const result = this.stateMachine.dispatch(event);
+    if (!result.ok) {
+      const errorMessage = `[StateMachine:${result.error.code}] ${result.error.message}`;
+      console.error(errorMessage, { state: result.error.state, event: result.error.event });
+      return;
+    }
+
     const newState = this.stateMachine.currentState;
 
     // Update UI
@@ -39,5 +50,30 @@ export class Game {
 
   getCurrentState(): GameState {
     return this.stateMachine.currentState;
+  }
+
+  getRunContext(): RunContext {
+    return this.stateMachine.getContext();
+  }
+
+  updateRunContext(updates: Partial<RunContext>): void {
+    this.stateMachine.updateContext(updates);
+  }
+
+  private getDefaultEventForCurrentState(): GameEvent | null {
+    switch (this.stateMachine.currentState) {
+      case 'TITLE':
+        return 'START_RUN';
+      case 'MAP':
+        return 'ENTER_ROOM';
+      case 'EVENT':
+        return 'RESOLVE_EVENT';
+      case 'REWARD':
+        return 'CLAIM_REWARD';
+      case 'DEFEAT':
+        return 'START_RUN';
+      case 'COMBAT':
+        return null;
+    }
   }
 }
