@@ -4,6 +4,7 @@ import { createUI } from './ui/createUI';
 import { GameState } from './game/stateMachine';
 import { runCombatTest } from './rules/testHarness';
 import { GameSession } from './game/session/GameSession';
+import { loadGameContent } from './content/loaders';
 
 const isDev = import.meta.env.DEV;
 
@@ -27,9 +28,18 @@ window.addEventListener('DOMContentLoaded', () => {
   const scene = createScene(engine, canvas);
   const ui = createUI();
 
+  let content;
+  try {
+    content = loadGameContent();
+  } catch (error) {
+    console.error('Failed to load content:', error);
+    throw error;
+  }
+
   const session = new GameSession({
     ui,
     scene,
+    content,
     onStateChange: (state: GameState) => {
       console.log(`Scene responding to state: ${state}`);
     },

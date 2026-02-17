@@ -1,0 +1,11 @@
+{
+  "enemies": [
+    {
+      "id": "goblin-chief",
+      "name": "Goblin Chief",
+      "hp": 40,
+      "attack": 4,
+      "armor": 2
+    }
+  ]
+}

@@ -1,9 +1,10 @@
 // Test harness for rules engine - no Babylon imports
 
-import { Character, Enemy } from './types';
 import { CombatEngine } from './combat';
 import { CombatLog } from './log';
 import { rollDiceExpression } from './dice';
+import { loadGameContent } from '../content/loaders';
+import { createInitialRun } from '../game/bootstrap/createInitialRun';
 
 /**
  * Run a simulated combat turn to test the rules engine
@@ -11,60 +12,21 @@ import { rollDiceExpression } from './dice';
 export function runCombatTest(): void {
   console.log('Initializing combat test...\n');
 
+  const { party, enemy } = createInitialRun(loadGameContent());
+  const [tank, second, third] = party;
+
+  if (!tank || !second || !third) {
+    throw new Error('Initial run must contain at least 3 party members for runCombatTest');
+  }
+
   // Create combat log
   const log = new CombatLog();
-
-  // Create party (3 characters)
-  const party: Character[] = [
-    {
-      id: 'hero1',
-      name: 'Knight',
-      hp: 30,
-      maxHp: 30,
-      attack: 5,
-      armor: 3,
-      isGuarding: false,
-      statuses: [],
-    },
-    {
-      id: 'hero2',
-      name: 'Mage',
-      hp: 20,
-      maxHp: 20,
-      attack: 7,
-      armor: 1,
-      isGuarding: false,
-      statuses: [],
-    },
-    {
-      id: 'hero3',
-      name: 'Ranger',
-      hp: 25,
-      maxHp: 25,
-      attack: 6,
-      armor: 2,
-      isGuarding: false,
-      statuses: [],
-    },
-  ];
-
-  // Create enemy
-  const enemy: Enemy = {
-    id: 'goblin1',
-    name: 'Goblin Chief',
-    hp: 40,
-    maxHp: 40,
-    attack: 4,
-    armor: 2,
-    isGuarding: false,
-    statuses: [],
-  };
 
   // Initialize combat engine
   const combat = new CombatEngine(party, enemy, log);
 
   console.log('Party:');
-  party.forEach(char => {
+  party.forEach((char) => {
     console.log(`  ${char.name}: HP ${char.hp}/${char.maxHp}, ATK ${char.attack}, ARM ${char.armor}`);
   });
   console.log(`\nEnemy:`);
@@ -79,31 +41,31 @@ export function runCombatTest(): void {
   console.log(`3d8-2: ${rollDiceExpression('3d8-2')}`);
   console.log('');
 
-  // Turn 1: Knight guards, Mage and Ranger attack
+  // Turn 1: first party member guards, others attack
   combat.startTurn();
 
   combat.executeAction({
     type: 'guard',
-    actorId: 'hero1',
+    actorId: tank.id,
   });
 
   combat.executeAction({
     type: 'attack',
-    actorId: 'hero2',
-    targetId: 'goblin1',
+    actorId: second.id,
+    targetId: enemy.id,
   });
 
   combat.executeAction({
     type: 'attack',
-    actorId: 'hero3',
-    targetId: 'goblin1',
+    actorId: third.id,
+    targetId: enemy.id,
   });
 
-  // Enemy attacks the Knight
+  // Enemy attacks first party member
   combat.executeAction({
     type: 'attack',
-    actorId: 'goblin1',
-    targetId: 'hero1',
+    actorId: enemy.id,
+    targetId: tank.id,
   });
 
   console.log('');
@@ -113,27 +75,27 @@ export function runCombatTest(): void {
 
   combat.executeAction({
     type: 'attack',
-    actorId: 'hero1',
-    targetId: 'goblin1',
+    actorId: tank.id,
+    targetId: enemy.id,
   });
 
   combat.executeAction({
     type: 'attack',
-    actorId: 'hero2',
-    targetId: 'goblin1',
+    actorId: second.id,
+    targetId: enemy.id,
   });
 
   combat.executeAction({
     type: 'attack',
-    actorId: 'hero3',
-    targetId: 'goblin1',
+    actorId: third.id,
+    targetId: enemy.id,
   });
 
-  // Enemy attacks the Mage
+  // Enemy attacks second party member
   combat.executeAction({
     type: 'attack',
-    actorId: 'goblin1',
-    targetId: 'hero2',
+    actorId: enemy.id,
+    targetId: second.id,
   });
 
   console.log('');
@@ -149,8 +111,8 @@ export function runCombatTest(): void {
     console.log('Testing dead target validation...');
     combat.executeAction({
       type: 'attack',
-      actorId: 'hero1',
-      targetId: 'goblin1',
+      actorId: tank.id,
+      targetId: enemy.id,
     });
   }
 
@@ -158,8 +120,8 @@ export function runCombatTest(): void {
   console.log('Testing friendly fire prevention...');
   combat.executeAction({
     type: 'attack',
-    actorId: 'hero1',
-    targetId: 'hero2',
+    actorId: tank.id,
+    targetId: second.id,
   });
 
   console.log('');
@@ -172,7 +134,7 @@ export function runCombatTest(): void {
   console.log('--- Final State ---');
   state = combat.getState();
   console.log('Party:');
-  state.party.forEach(char => {
+  state.party.forEach((char) => {
     console.log(`  ${char.name}: HP ${char.hp}/${char.maxHp}`);
   });
   if (state.enemy) {

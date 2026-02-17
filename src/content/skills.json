@@ -1,0 +1,9 @@
+{
+  "skills": [
+    {
+      "id": "basic-attack",
+      "name": "Basic Attack",
+      "description": "Deal standard weapon damage to one target."
+    }
+  ]
+}

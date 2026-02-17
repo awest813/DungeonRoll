@@ -1,0 +1,13 @@
+{
+  "items": [
+    {
+      "id": "small-potion",
+      "name": "Small Potion",
+      "description": "Restore a small amount of HP.",
+      "effect": {
+        "type": "heal",
+        "value": 10
+      }
+    }
+  ]
+}
