@@ -14,6 +14,8 @@ export class CombatUIController {
   private enemy: Enemy;
   private currentTurn: number = 0;
   private renderer?: CombatRenderer;
+  private onCombatEndCallback?: (victor: 'party' | 'enemy') => void;
+  private hasCombatEnded: boolean = false;
 
   constructor(
     combat: CombatEngine,
@@ -21,7 +23,8 @@ export class CombatUIController {
     ui: CombatUI,
     party: Character[],
     enemy: Enemy,
-    renderer?: CombatRenderer
+    renderer?: CombatRenderer,
+    onCombatEnd?: (victor: 'party' | 'enemy') => void
   ) {
     this.combat = combat;
     this.log = log;
@@ -29,6 +32,7 @@ export class CombatUIController {
     this.party = party;
     this.enemy = enemy;
     this.renderer = renderer;
+    this.onCombatEndCallback = onCombatEnd;
 
     this.setupEventHandlers();
     this.refresh();
@@ -223,8 +227,13 @@ export class CombatUIController {
    * Check if combat is over and display result
    */
   private checkCombatEnd() {
-    if (this.combat.isOver()) {
+    if (this.combat.isOver() && !this.hasCombatEnded) {
+      this.hasCombatEnded = true;
       const victor = this.combat.getVictor();
+      if (!victor) {
+        return;
+      }
+
       if (victor === 'party') {
         this.ui.addLogEntry('');
         this.ui.addLogEntry('=================================');
@@ -237,6 +246,10 @@ export class CombatUIController {
         this.ui.addLogEntry('💀 DEFEAT! The party is defeated! 💀');
         this.ui.addLogEntry('=================================');
         console.log('DEFEAT! Party loses!');
+      }
+
+      if (this.onCombatEndCallback) {
+        this.onCombatEndCallback(victor);
       }
     }
   }
