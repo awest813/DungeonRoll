@@ -43,6 +43,18 @@ export class CombatRenderer {
   }
 
   /**
+   * Create meshes for multiple enemies
+   */
+  createEnemyMeshes(enemies: Enemy[]): void {
+    enemies.forEach((enemy, index) => {
+      const position = this.getEnemyPositionByIndex(index, enemies.length);
+      const unitMesh = this.createUnitMesh(enemy.id, enemy.name, position, 'enemy');
+      this.unitMeshes.set(enemy.id, unitMesh);
+      this.updateUnitHP(enemy.id, enemy.hp, enemy.maxHp);
+    });
+  }
+
+  /**
    * Create a unit mesh (character or enemy)
    */
   private createUnitMesh(
@@ -160,6 +172,15 @@ export class CombatRenderer {
    */
   private getEnemyPosition(): BABYLON.Vector3 {
     return new BABYLON.Vector3(0, 0.75, 3);
+  }
+
+  /**
+   * Get position for enemy by index in a multi-enemy formation
+   */
+  private getEnemyPositionByIndex(index: number, total: number): BABYLON.Vector3 {
+    const spacing = 2.5;
+    const startX = -((total - 1) * spacing) / 2;
+    return new BABYLON.Vector3(startX + index * spacing, 0.75, 3);
   }
 
   /**

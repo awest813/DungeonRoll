@@ -3,33 +3,366 @@
     {
       "id": "entry-hall",
       "name": "Entry Hall",
+      "description": "The crumbling entrance of the dungeon. Goblins lurk in the shadows.",
+      "recommendedLevel": 1,
       "party": [
         {
           "id": "knight",
-          "name": "Knight",
-          "hp": 30,
+          "name": "Sir Aldric",
+          "characterClass": "knight",
+          "hp": 35,
+          "mp": 8,
           "attack": 5,
-          "armor": 3
+          "armor": 4,
+          "speed": 3,
+          "level": 1,
+          "skillIds": ["basic-attack", "power-strike", "shield-bash"]
         },
         {
           "id": "mage",
-          "name": "Mage",
-          "hp": 20,
+          "name": "Elara",
+          "characterClass": "mage",
+          "hp": 22,
+          "mp": 25,
           "attack": 7,
-          "armor": 1
+          "armor": 1,
+          "speed": 4,
+          "level": 1,
+          "skillIds": ["basic-attack", "fire-bolt", "ice-storm"]
         },
         {
           "id": "ranger",
-          "name": "Ranger",
-          "hp": 25,
+          "name": "Finn",
+          "characterClass": "ranger",
+          "hp": 28,
+          "mp": 12,
           "attack": 6,
-          "armor": 2
+          "armor": 2,
+          "speed": 6,
+          "level": 1,
+          "skillIds": ["basic-attack", "aimed-shot", "volley"]
         }
       ],
       "encounters": [
         {
-          "id": "entry-hall-goblin",
-          "enemyId": "goblin-chief"
+          "id": "entry-hall-goblins",
+          "enemyIds": ["goblin-grunt", "goblin-grunt"]
+        },
+        {
+          "id": "entry-hall-chief",
+          "enemyIds": ["goblin-chief"]
+        }
+      ]
+    },
+    {
+      "id": "goblin-den",
+      "name": "Goblin Den",
+      "description": "A filthy cave where goblins make their home. A shaman guards the deeper tunnels.",
+      "recommendedLevel": 2,
+      "party": [
+        {
+          "id": "knight",
+          "name": "Sir Aldric",
+          "characterClass": "knight",
+          "hp": 35,
+          "mp": 8,
+          "attack": 5,
+          "armor": 4,
+          "speed": 3,
+          "level": 1,
+          "skillIds": ["basic-attack", "power-strike", "shield-bash"]
+        },
+        {
+          "id": "mage",
+          "name": "Elara",
+          "characterClass": "mage",
+          "hp": 22,
+          "mp": 25,
+          "attack": 7,
+          "armor": 1,
+          "speed": 4,
+          "level": 1,
+          "skillIds": ["basic-attack", "fire-bolt", "ice-storm"]
+        },
+        {
+          "id": "ranger",
+          "name": "Finn",
+          "characterClass": "ranger",
+          "hp": 28,
+          "mp": 12,
+          "attack": 6,
+          "armor": 2,
+          "speed": 6,
+          "level": 1,
+          "skillIds": ["basic-attack", "aimed-shot", "volley"]
+        }
+      ],
+      "encounters": [
+        {
+          "id": "goblin-den-pack",
+          "enemyIds": ["goblin-grunt", "goblin-grunt", "goblin-shaman"]
+        },
+        {
+          "id": "goblin-den-boss",
+          "enemyIds": ["goblin-chief", "goblin-shaman"]
+        }
+      ]
+    },
+    {
+      "id": "bone-corridor",
+      "name": "Bone Corridor",
+      "description": "Bones crunch underfoot. The dead do not rest here.",
+      "recommendedLevel": 3,
+      "party": [
+        {
+          "id": "knight",
+          "name": "Sir Aldric",
+          "characterClass": "knight",
+          "hp": 35,
+          "mp": 8,
+          "attack": 5,
+          "armor": 4,
+          "speed": 3,
+          "level": 1,
+          "skillIds": ["basic-attack", "power-strike", "shield-bash"]
+        },
+        {
+          "id": "mage",
+          "name": "Elara",
+          "characterClass": "mage",
+          "hp": 22,
+          "mp": 25,
+          "attack": 7,
+          "armor": 1,
+          "speed": 4,
+          "level": 1,
+          "skillIds": ["basic-attack", "fire-bolt", "ice-storm"]
+        },
+        {
+          "id": "ranger",
+          "name": "Finn",
+          "characterClass": "ranger",
+          "hp": 28,
+          "mp": 12,
+          "attack": 6,
+          "armor": 2,
+          "speed": 6,
+          "level": 1,
+          "skillIds": ["basic-attack", "aimed-shot", "volley"]
+        }
+      ],
+      "encounters": [
+        {
+          "id": "bone-corridor-skeletons",
+          "enemyIds": ["skeleton-warrior", "skeleton-archer"]
+        },
+        {
+          "id": "bone-corridor-undead",
+          "enemyIds": ["skeleton-warrior", "skeleton-warrior", "skeleton-mage"]
+        }
+      ]
+    },
+    {
+      "id": "wolf-den",
+      "name": "Wolf Den",
+      "description": "The howling grows louder. Savage beasts patrol this territory.",
+      "recommendedLevel": 3,
+      "party": [
+        {
+          "id": "knight",
+          "name": "Sir Aldric",
+          "characterClass": "knight",
+          "hp": 35,
+          "mp": 8,
+          "attack": 5,
+          "armor": 4,
+          "speed": 3,
+          "level": 1,
+          "skillIds": ["basic-attack", "power-strike", "shield-bash"]
+        },
+        {
+          "id": "mage",
+          "name": "Elara",
+          "characterClass": "mage",
+          "hp": 22,
+          "mp": 25,
+          "attack": 7,
+          "armor": 1,
+          "speed": 4,
+          "level": 1,
+          "skillIds": ["basic-attack", "fire-bolt", "ice-storm"]
+        },
+        {
+          "id": "ranger",
+          "name": "Finn",
+          "characterClass": "ranger",
+          "hp": 28,
+          "mp": 12,
+          "attack": 6,
+          "armor": 2,
+          "speed": 6,
+          "level": 1,
+          "skillIds": ["basic-attack", "aimed-shot", "volley"]
+        }
+      ],
+      "encounters": [
+        {
+          "id": "wolf-den-pack",
+          "enemyIds": ["dire-wolf", "dire-wolf"]
+        }
+      ]
+    },
+    {
+      "id": "troll-bridge",
+      "name": "Troll Bridge",
+      "description": "A massive stone bridge blocks the way forward. Something large guards it.",
+      "recommendedLevel": 4,
+      "party": [
+        {
+          "id": "knight",
+          "name": "Sir Aldric",
+          "characterClass": "knight",
+          "hp": 35,
+          "mp": 8,
+          "attack": 5,
+          "armor": 4,
+          "speed": 3,
+          "level": 1,
+          "skillIds": ["basic-attack", "power-strike", "shield-bash"]
+        },
+        {
+          "id": "mage",
+          "name": "Elara",
+          "characterClass": "mage",
+          "hp": 22,
+          "mp": 25,
+          "attack": 7,
+          "armor": 1,
+          "speed": 4,
+          "level": 1,
+          "skillIds": ["basic-attack", "fire-bolt", "ice-storm"]
+        },
+        {
+          "id": "ranger",
+          "name": "Finn",
+          "characterClass": "ranger",
+          "hp": 28,
+          "mp": 12,
+          "attack": 6,
+          "armor": 2,
+          "speed": 6,
+          "level": 1,
+          "skillIds": ["basic-attack", "aimed-shot", "volley"]
+        }
+      ],
+      "encounters": [
+        {
+          "id": "troll-bridge-fight",
+          "enemyIds": ["cave-troll"]
+        }
+      ]
+    },
+    {
+      "id": "dark-sanctum",
+      "name": "Dark Sanctum",
+      "description": "An unholy altar pulses with dark energy. The necromancer awaits.",
+      "recommendedLevel": 5,
+      "party": [
+        {
+          "id": "knight",
+          "name": "Sir Aldric",
+          "characterClass": "knight",
+          "hp": 35,
+          "mp": 8,
+          "attack": 5,
+          "armor": 4,
+          "speed": 3,
+          "level": 1,
+          "skillIds": ["basic-attack", "power-strike", "shield-bash"]
+        },
+        {
+          "id": "mage",
+          "name": "Elara",
+          "characterClass": "mage",
+          "hp": 22,
+          "mp": 25,
+          "attack": 7,
+          "armor": 1,
+          "speed": 4,
+          "level": 1,
+          "skillIds": ["basic-attack", "fire-bolt", "ice-storm"]
+        },
+        {
+          "id": "ranger",
+          "name": "Finn",
+          "characterClass": "ranger",
+          "hp": 28,
+          "mp": 12,
+          "attack": 6,
+          "armor": 2,
+          "speed": 6,
+          "level": 1,
+          "skillIds": ["basic-attack", "aimed-shot", "volley"]
+        }
+      ],
+      "encounters": [
+        {
+          "id": "dark-sanctum-guards",
+          "enemyIds": ["dark-knight", "skeleton-mage"]
+        },
+        {
+          "id": "dark-sanctum-boss",
+          "enemyIds": ["necromancer", "skeleton-warrior", "skeleton-warrior"]
+        }
+      ]
+    },
+    {
+      "id": "dragon-lair",
+      "name": "Dragon's Lair",
+      "description": "Heat shimmers in the air. A young dragon guards its hoard.",
+      "recommendedLevel": 6,
+      "party": [
+        {
+          "id": "knight",
+          "name": "Sir Aldric",
+          "characterClass": "knight",
+          "hp": 35,
+          "mp": 8,
+          "attack": 5,
+          "armor": 4,
+          "speed": 3,
+          "level": 1,
+          "skillIds": ["basic-attack", "power-strike", "shield-bash"]
+        },
+        {
+          "id": "mage",
+          "name": "Elara",
+          "characterClass": "mage",
+          "hp": 22,
+          "mp": 25,
+          "attack": 7,
+          "armor": 1,
+          "speed": 4,
+          "level": 1,
+          "skillIds": ["basic-attack", "fire-bolt", "ice-storm"]
+        },
+        {
+          "id": "ranger",
+          "name": "Finn",
+          "characterClass": "ranger",
+          "hp": 28,
+          "mp": 12,
+          "attack": 6,
+          "armor": 2,
+          "speed": 6,
+          "level": 1,
+          "skillIds": ["basic-attack", "aimed-shot", "volley"]
+        }
+      ],
+      "encounters": [
+        {
+          "id": "dragon-lair-boss",
+          "enemyIds": ["dragon-whelp"]
         }
       ]
     }

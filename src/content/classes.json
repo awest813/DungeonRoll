@@ -1,0 +1,100 @@
+{
+  "classes": [
+    {
+      "id": "knight",
+      "name": "Knight",
+      "baseHp": 35,
+      "baseMp": 8,
+      "baseAttack": 5,
+      "baseArmor": 4,
+      "baseSpeed": 3,
+      "hpGrowth": 8,
+      "mpGrowth": 2,
+      "attackGrowth": 2,
+      "armorGrowth": 2,
+      "speedGrowth": 1,
+      "startingSkills": ["basic-attack", "power-strike", "shield-bash"],
+      "learnableSkills": [
+        { "skillId": "cleave", "level": 3 },
+        { "skillId": "war-cry", "level": 5 }
+      ]
+    },
+    {
+      "id": "mage",
+      "name": "Mage",
+      "baseHp": 22,
+      "baseMp": 25,
+      "baseAttack": 7,
+      "baseArmor": 1,
+      "baseSpeed": 4,
+      "hpGrowth": 4,
+      "mpGrowth": 6,
+      "attackGrowth": 3,
+      "armorGrowth": 0,
+      "speedGrowth": 1,
+      "startingSkills": ["basic-attack", "fire-bolt", "ice-storm"],
+      "learnableSkills": [
+        { "skillId": "weaken", "level": 3 },
+        { "skillId": "poison-bolt", "level": 4 }
+      ]
+    },
+    {
+      "id": "ranger",
+      "name": "Ranger",
+      "baseHp": 28,
+      "baseMp": 12,
+      "baseAttack": 6,
+      "baseArmor": 2,
+      "baseSpeed": 6,
+      "hpGrowth": 5,
+      "mpGrowth": 3,
+      "attackGrowth": 3,
+      "armorGrowth": 1,
+      "speedGrowth": 2,
+      "startingSkills": ["basic-attack", "aimed-shot", "volley"],
+      "learnableSkills": [
+        { "skillId": "poison-blade", "level": 3 },
+        { "skillId": "backstab", "level": 5 }
+      ]
+    },
+    {
+      "id": "cleric",
+      "name": "Cleric",
+      "baseHp": 30,
+      "baseMp": 20,
+      "baseAttack": 4,
+      "baseArmor": 3,
+      "baseSpeed": 3,
+      "hpGrowth": 6,
+      "mpGrowth": 5,
+      "attackGrowth": 1,
+      "armorGrowth": 1,
+      "speedGrowth": 1,
+      "startingSkills": ["basic-attack", "heal", "holy-light"],
+      "learnableSkills": [
+        { "skillId": "group-heal", "level": 3 },
+        { "skillId": "shield-of-faith", "level": 4 },
+        { "skillId": "regenerate", "level": 5 }
+      ]
+    },
+    {
+      "id": "rogue",
+      "name": "Rogue",
+      "baseHp": 24,
+      "baseMp": 10,
+      "baseAttack": 6,
+      "baseArmor": 2,
+      "baseSpeed": 8,
+      "hpGrowth": 4,
+      "mpGrowth": 3,
+      "attackGrowth": 3,
+      "armorGrowth": 1,
+      "speedGrowth": 3,
+      "startingSkills": ["basic-attack", "backstab", "poison-blade"],
+      "learnableSkills": [
+        { "skillId": "aimed-shot", "level": 3 },
+        { "skillId": "weaken", "level": 5 }
+      ]
+    }
+  ]
+}

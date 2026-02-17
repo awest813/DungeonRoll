@@ -3,10 +3,86 @@
     {
       "id": "small-potion",
       "name": "Small Potion",
-      "description": "Restore a small amount of HP.",
+      "description": "Restore 15 HP.",
       "effect": {
         "type": "heal",
-        "value": 10
+        "value": 15
+      }
+    },
+    {
+      "id": "medium-potion",
+      "name": "Medium Potion",
+      "description": "Restore 35 HP.",
+      "effect": {
+        "type": "heal",
+        "value": 35
+      }
+    },
+    {
+      "id": "large-potion",
+      "name": "Large Potion",
+      "description": "Restore 60 HP.",
+      "effect": {
+        "type": "heal",
+        "value": 60
+      }
+    },
+    {
+      "id": "ether",
+      "name": "Ether",
+      "description": "Restore 15 MP.",
+      "effect": {
+        "type": "mp_restore",
+        "value": 15
+      }
+    },
+    {
+      "id": "mega-ether",
+      "name": "Mega Ether",
+      "description": "Restore 40 MP.",
+      "effect": {
+        "type": "mp_restore",
+        "value": 40
+      }
+    },
+    {
+      "id": "antidote",
+      "name": "Antidote",
+      "description": "Cure poison.",
+      "effect": {
+        "type": "cure_status",
+        "value": 0,
+        "statusCured": "poisoned"
+      }
+    },
+    {
+      "id": "smelling-salts",
+      "name": "Smelling Salts",
+      "description": "Cure stun.",
+      "effect": {
+        "type": "cure_status",
+        "value": 0,
+        "statusCured": "stunned"
+      }
+    },
+    {
+      "id": "strength-tonic",
+      "name": "Strength Tonic",
+      "description": "Boost attack power for 3 turns.",
+      "effect": {
+        "type": "buff",
+        "value": 4,
+        "statusApplied": "buffed",
+        "statusDuration": 3
+      }
+    },
+    {
+      "id": "bomb",
+      "name": "Bomb",
+      "description": "Deal 20 damage to one enemy.",
+      "effect": {
+        "type": "damage",
+        "value": 20
       }
     }
   ]

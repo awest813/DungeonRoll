@@ -97,10 +97,6 @@ export function createStateMachine(
           };
         }
 
-        if (context.encounterSeed % 5 === 0) {
-          return { ok: true, nextState: 'REWARD' };
-        }
-
         return { ok: true, nextState: 'COMBAT' };
 
       case 'COMBAT':
@@ -216,13 +212,6 @@ export function createStateMachine(
         context = {
           ...context,
           rewardsPending: false,
-        };
-      }
-
-      if (event === 'RESOLVE_EVENT' && transition.nextState === 'REWARD') {
-        context = {
-          ...context,
-          rewardsPending: true,
         };
       }
 

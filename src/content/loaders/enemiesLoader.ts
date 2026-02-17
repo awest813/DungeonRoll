@@ -1,7 +1,6 @@
 import { EnemyTemplate } from './types';
 import {
   expectArray,
-  expectExactKeys,
   expectNumber,
   expectObject,
   expectString,
@@ -10,7 +9,6 @@ import {
 
 export function loadEnemies(rawContent: unknown): Map<string, EnemyTemplate> {
   const root = expectObject(rawContent, 'enemies.json');
-  expectExactKeys(root, ['enemies'], 'enemies.json');
 
   const enemies = expectArray(root.enemies, 'enemies.json.enemies');
   const enemyMap = new Map<string, EnemyTemplate>();
@@ -18,14 +16,21 @@ export function loadEnemies(rawContent: unknown): Map<string, EnemyTemplate> {
   enemies.forEach((entry, index) => {
     const path = `enemies.json.enemies[${index}]`;
     const row = expectObject(entry, path);
-    expectExactKeys(row, ['id', 'name', 'hp', 'attack', 'armor'], path);
+
+    const skillIdsRaw = expectArray(row.skillIds, `${path}.skillIds`);
+    const skillIds = skillIdsRaw.map((s, i) => expectString(s, `${path}.skillIds[${i}]`));
 
     const enemy: EnemyTemplate = {
       id: expectString(row.id, `${path}.id`),
       name: expectString(row.name, `${path}.name`),
       hp: expectNumber(row.hp, `${path}.hp`),
+      mp: expectNumber(row.mp, `${path}.mp`),
       attack: expectNumber(row.attack, `${path}.attack`),
       armor: expectNumber(row.armor, `${path}.armor`),
+      speed: expectNumber(row.speed, `${path}.speed`),
+      xpReward: expectNumber(row.xpReward, `${path}.xpReward`),
+      goldReward: expectNumber(row.goldReward, `${path}.goldReward`),
+      skillIds,
     };
 
     expectUniqueId(enemyMap, enemy, path);
