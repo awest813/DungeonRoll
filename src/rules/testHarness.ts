@@ -24,6 +24,7 @@ export function runCombatTest(): void {
       attack: 5,
       armor: 3,
       isGuarding: false,
+      statuses: [],
     },
     {
       id: 'hero2',
@@ -33,6 +34,7 @@ export function runCombatTest(): void {
       attack: 7,
       armor: 1,
       isGuarding: false,
+      statuses: [],
     },
     {
       id: 'hero3',
@@ -42,6 +44,7 @@ export function runCombatTest(): void {
       attack: 6,
       armor: 2,
       isGuarding: false,
+      statuses: [],
     },
   ];
 
@@ -53,6 +56,8 @@ export function runCombatTest(): void {
     maxHp: 40,
     attack: 4,
     armor: 2,
+    isGuarding: false,
+    statuses: [],
   };
 
   // Initialize combat engine
@@ -133,13 +138,39 @@ export function runCombatTest(): void {
 
   console.log('');
 
+  // Turn 3: Test edge cases
+  combat.startTurn();
+
+  // Get current state for testing
+  let state = combat.getState();
+
+  // Test: Try to attack already defeated enemy (if defeated)
+  if (state.enemy && state.enemy.hp <= 0) {
+    console.log('Testing dead target validation...');
+    combat.executeAction({
+      type: 'attack',
+      actorId: 'hero1',
+      targetId: 'goblin1',
+    });
+  }
+
+  // Test: Try to have party member attack another party member
+  console.log('Testing friendly fire prevention...');
+  combat.executeAction({
+    type: 'attack',
+    actorId: 'hero1',
+    targetId: 'hero2',
+  });
+
+  console.log('');
+
   // Print combat log
   console.log('--- Complete Combat Log ---');
   log.print();
 
   console.log('');
   console.log('--- Final State ---');
-  const state = combat.getState();
+  state = combat.getState();
   console.log('Party:');
   state.party.forEach(char => {
     console.log(`  ${char.name}: HP ${char.hp}/${char.maxHp}`);

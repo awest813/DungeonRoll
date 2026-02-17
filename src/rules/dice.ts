@@ -15,6 +15,9 @@ const diceSides: Record<DiceType, number> = {
  * Roll a single die (1 to N)
  */
 export function rollDie(sides: number): number {
+  if (sides < 1) {
+    throw new Error(`Invalid die: must have at least 1 side (got ${sides})`);
+  }
   return Math.floor(Math.random() * sides) + 1;
 }
 
@@ -44,7 +47,15 @@ export function rollDiceExpression(expression: string): number {
   const modifier = match[3] ? parseInt(match[3], 10) : 0;
 
   if (numDice < 1 || sides < 1) {
-    throw new Error(`Invalid dice expression: ${expression}`);
+    throw new Error(`Invalid dice expression: ${expression} (must have at least 1 die with 1 side)`);
+  }
+
+  if (numDice > 100) {
+    throw new Error(`Too many dice: ${numDice} (max 100)`);
+  }
+
+  if (sides > 1000) {
+    throw new Error(`Too many sides: ${sides} (max 1000)`);
   }
 
   let total = 0;
@@ -59,6 +70,13 @@ export function rollDiceExpression(expression: string): number {
  * Roll multiple dice and return individual results
  */
 export function rollMultiple(count: number, sides: number): number[] {
+  if (count < 1) {
+    throw new Error(`Invalid count: ${count} (must be at least 1)`);
+  }
+  if (count > 100) {
+    throw new Error(`Too many dice: ${count} (max 100)`);
+  }
+
   const results: number[] = [];
   for (let i = 0; i < count; i++) {
     results.push(rollDie(sides));

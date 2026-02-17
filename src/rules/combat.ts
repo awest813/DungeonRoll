@@ -32,6 +32,12 @@ export class CombatEngine {
       return;
     }
 
+    // Dead characters can't act
+    if (actor.hp <= 0) {
+      this.log.add(`${actor.name} is defeated and cannot act!`);
+      return;
+    }
+
     switch (action.type) {
       case 'attack':
         this.executeAttack(actor, action.targetId);
@@ -60,6 +66,21 @@ export class CombatEngine {
       return;
     }
 
+    // Can't attack dead targets
+    if (target.hp <= 0) {
+      this.log.add(`${target.name} is already defeated!`);
+      return;
+    }
+
+    // Validate target is an enemy (party can't attack party, enemy can't attack enemy)
+    const attackerIsParty = this.state.party.some(c => c.id === attacker.id);
+    const targetIsParty = this.state.party.some(c => c.id === target.id);
+
+    if (attackerIsParty === targetIsParty) {
+      this.log.add(`${attacker.name} cannot attack ${target.name}!`);
+      return;
+    }
+
     // Roll attack damage (d6 + attacker's attack stat)
     const roll = rollDiceExpression('1d6');
     const rawDamage = roll + attacker.attack;
@@ -85,9 +106,10 @@ export class CombatEngine {
       `  ${target.name} takes ${damageResult.finalDamage} damage (HP: ${target.hp}/${target.maxHp})`
     );
 
-    // Clear guard status if character was guarding
-    if ('isGuarding' in target && target.isGuarding) {
+    // Clear guard status when taking damage
+    if (target.isGuarding) {
       target.isGuarding = false;
+      this.log.add(`  ${target.name}'s guard is broken!`);
     }
 
     // Check for defeat
@@ -100,10 +122,8 @@ export class CombatEngine {
    * Execute a guard action
    */
   private executeGuard(character: Character | Enemy): void {
-    if ('isGuarding' in character) {
-      character.isGuarding = true;
-      this.log.add(`${character.name} takes a defensive stance!`);
-    }
+    character.isGuarding = true;
+    this.log.add(`${character.name} takes a defensive stance!`);
   }
 
   /**
@@ -116,7 +136,7 @@ export class CombatEngine {
     let armor = target.armor;
 
     // Double armor if guarding
-    if ('isGuarding' in target && target.isGuarding) {
+    if (target.isGuarding) {
       armor *= 2;
     }
 
@@ -150,11 +170,6 @@ export class CombatEngine {
   startTurn(): void {
     this.state.turnNumber++;
     this.log.addTurnStart(this.state.turnNumber);
-
-    // Clear guard status at start of turn
-    this.state.party.forEach(char => {
-      char.isGuarding = false;
-    });
   }
 
   /**

@@ -2,6 +2,14 @@
 
 export type DiceType = 'd4' | 'd6' | 'd8' | 'd10' | 'd12' | 'd20';
 
+export type StatusType = 'guarding' | 'stunned' | 'poisoned' | 'buffed';
+
+export interface StatusEffect {
+  type: StatusType;
+  duration: number;
+  value?: number;
+}
+
 export interface Character {
   id: string;
   name: string;
@@ -10,6 +18,7 @@ export interface Character {
   attack: number;
   armor: number;
   isGuarding: boolean;
+  statuses: StatusEffect[];
 }
 
 export interface Enemy {
@@ -19,6 +28,8 @@ export interface Enemy {
   maxHp: number;
   attack: number;
   armor: number;
+  isGuarding: boolean;
+  statuses: StatusEffect[];
 }
 
 export type ActionType = 'attack' | 'guard';
