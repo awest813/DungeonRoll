@@ -3,6 +3,7 @@ import { Game } from './game/Game';
 import { createScene } from './render/createScene';
 import { createUI } from './ui/createUI';
 import { GameState } from './game/stateMachine';
+import { runCombatTest } from './rules/testHarness';
 
 console.log('Dungeon Roll - JRPG Engine starting...');
 
@@ -38,4 +39,12 @@ window.addEventListener('DOMContentLoaded', () => {
   });
 
   console.log('Game initialized. Current state:', game.getCurrentState());
+
+  // Run combat test harness
+  console.log('\n=== Running Combat Test Harness ===');
+  runCombatTest();
+
+  // Expose test function to window for manual testing
+  (window as any).runCombatTest = runCombatTest;
+  console.log('Tip: Run runCombatTest() in console to test combat again');
 });
