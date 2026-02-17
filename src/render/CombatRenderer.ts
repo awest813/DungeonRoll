@@ -65,9 +65,17 @@ export class CombatRenderer {
       ? new BABYLON.Color3(0.3, 0.6, 0.3) // Green for party
       : new BABYLON.Color3(0.8, 0.2, 0.2); // Red for enemy
     material.specularColor = new BABYLON.Color3(0.1, 0.1, 0.1);
+    material.alpha = 1.0;
     body.material = material;
 
-    // Create name label (floating box)
+    // Enable shadows
+    body.receiveShadows = true;
+    const shadowGenerator = (this.scene as any).shadowGenerator;
+    if (shadowGenerator) {
+      shadowGenerator.addShadowCaster(body);
+    }
+
+    // Create name label with dynamic texture
     const nameLabel = BABYLON.MeshBuilder.CreatePlane(
       `name_${id}`,
       { width: 1.5, height: 0.3 },
@@ -76,10 +84,30 @@ export class CombatRenderer {
     nameLabel.position = position.add(new BABYLON.Vector3(0, 1.2, 0));
     nameLabel.billboardMode = BABYLON.Mesh.BILLBOARDMODE_ALL;
 
+    // Create dynamic texture for name text
+    const nameTexture = new BABYLON.DynamicTexture(
+      `nameTexture_${id}`,
+      { width: 256, height: 64 },
+      this.scene,
+      false
+    );
     const nameMat = new BABYLON.StandardMaterial(`nameMat_${id}`, this.scene);
-    nameMat.diffuseColor = new BABYLON.Color3(1, 1, 1);
-    nameMat.emissiveColor = new BABYLON.Color3(0.2, 0.2, 0.2);
+    nameMat.diffuseTexture = nameTexture;
+    nameMat.emissiveColor = new BABYLON.Color3(0.8, 0.8, 0.8);
+    nameMat.alpha = 1.0;
+    nameMat.backFaceCulling = false;
     nameLabel.material = nameMat;
+
+    // Draw text on texture
+    const ctx = nameTexture.getContext() as CanvasRenderingContext2D;
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+    ctx.fillRect(0, 0, 256, 64);
+    ctx.font = 'bold 32px Arial';
+    ctx.fillStyle = 'white';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(name, 128, 32);
+    nameTexture.update();
 
     // Create HP bar background
     const hpBarBg = BABYLON.MeshBuilder.CreateBox(
@@ -91,6 +119,7 @@ export class CombatRenderer {
 
     const hpBgMat = new BABYLON.StandardMaterial(`hpBgMat_${id}`, this.scene);
     hpBgMat.diffuseColor = new BABYLON.Color3(0.2, 0.2, 0.2);
+    hpBgMat.alpha = 1.0;
     hpBarBg.material = hpBgMat;
 
     // Create HP bar (foreground)
@@ -103,6 +132,8 @@ export class CombatRenderer {
 
     const hpMat = new BABYLON.StandardMaterial(`hpMat_${id}`, this.scene);
     hpMat.diffuseColor = new BABYLON.Color3(0.2, 0.8, 0.2);
+    hpMat.emissiveColor = new BABYLON.Color3(0.1, 0.4, 0.1);
+    hpMat.alpha = 1.0;
     hpBar.material = hpMat;
 
     return {
@@ -149,10 +180,13 @@ export class CombatRenderer {
     const hpMat = unitMesh.hpBar.material as BABYLON.StandardMaterial;
     if (hpPercent > 0.5) {
       hpMat.diffuseColor = new BABYLON.Color3(0.2, 0.8, 0.2); // Green
+      hpMat.emissiveColor = new BABYLON.Color3(0.1, 0.4, 0.1);
     } else if (hpPercent > 0.25) {
       hpMat.diffuseColor = new BABYLON.Color3(1.0, 0.65, 0.0); // Orange
+      hpMat.emissiveColor = new BABYLON.Color3(0.5, 0.3, 0.0);
     } else {
       hpMat.diffuseColor = new BABYLON.Color3(0.8, 0.2, 0.2); // Red
+      hpMat.emissiveColor = new BABYLON.Color3(0.4, 0.1, 0.1);
     }
 
     // If dead, fade out
