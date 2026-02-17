@@ -13,10 +13,26 @@ import { CombatLog } from './rules/log';
 console.log('Dungeon Roll - JRPG Engine starting...');
 
 window.addEventListener('DOMContentLoaded', () => {
+  console.log('DOMContentLoaded event fired');
+
+  // Hide loading indicator
+  const loadingDiv = document.getElementById('loading');
+  if (loadingDiv) {
+    setTimeout(() => {
+      loadingDiv.style.display = 'none';
+    }, 1000);
+  }
+
   const canvas = document.getElementById('renderCanvas') as HTMLCanvasElement;
+  if (!canvas) {
+    console.error('Canvas element not found!');
+    return;
+  }
+  console.log('Canvas element found');
 
   // Initialize Babylon engine
   const engine = new BABYLON.Engine(canvas, true);
+  console.log('Babylon engine initialized');
 
   // Create scene with diorama board
   const scene = createScene(engine, canvas);
@@ -45,16 +61,21 @@ window.addEventListener('DOMContentLoaded', () => {
 
   console.log('Game initialized. Current state:', game.getCurrentState());
 
-  // Run combat test harness
-  console.log('\n=== Running Combat Test Harness ===');
-  runCombatTest();
+  // Run combat test harness (wrapped in try-catch to prevent blocking)
+  try {
+    console.log('\n=== Running Combat Test Harness ===');
+    runCombatTest();
+  } catch (error) {
+    console.error('Error in combat test harness:', error);
+  }
 
   // Expose test function to window for manual testing
   (window as any).runCombatTest = runCombatTest;
   console.log('Tip: Run runCombatTest() in console to test combat again');
 
-  // Initialize Combat UI
-  console.log('\n=== Initializing Combat UI ===');
+  // Initialize Combat UI (wrapped in try-catch)
+  try {
+    console.log('\n=== Initializing Combat UI ===');
 
   // Create party
   const party: Character[] = [
@@ -120,13 +141,19 @@ window.addEventListener('DOMContentLoaded', () => {
     enemy
   );
 
-  // Start combat and show UI
-  combatController.startTurn();
-  combatController.show();
+    // Start combat and show UI
+    combatController.startTurn();
+    combatController.show();
 
-  console.log('Combat UI ready! Click Attack or Guard buttons to play.');
+    console.log('Combat UI ready! Click Attack or Guard buttons to play.');
 
-  // Expose combat controller for testing
-  (window as any).combat = combatController;
-  console.log('Tip: combat.enemyTurn() to make enemy attack');
+    // Expose combat controller for testing
+    (window as any).combat = combatController;
+    console.log('Tip: combat.enemyTurn() to make enemy attack');
+  } catch (error) {
+    console.error('Error initializing Combat UI:', error);
+    console.log('Combat UI failed to initialize. Check console for errors.');
+  }
+
+  console.log('=== Initialization Complete ===');
 });

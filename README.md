@@ -45,14 +45,68 @@ src/
     *.json             # Data-driven content (enemies, skills, items, rooms)
 ```
 
-## Phase 1 Features
+## Features
 
+### Phase 1: Foundation ✓
 - ✓ Babylon.js scene with diorama board (ground + lighting + isometric camera)
 - ✓ Finite state machine (TITLE → MAP → EVENT → COMBAT → REWARD → MAP)
 - ✓ UI overlay showing current state
 - ✓ "Advance State" button to cycle through states
 - ✓ Clean separation: rules engine never imports Babylon
 - ✓ Ready for data-driven content in `/src/content/`
+
+### Phase 2: Rules Engine ✓
+- ✓ Dice rolling system (d4-d20, NdM+K expressions like "2d6+3")
+- ✓ Combat engine (3 party vs 1 enemy)
+- ✓ Actions: Attack, Guard
+- ✓ Armor reduces damage by flat amount (doubled when guarding)
+- ✓ Combat logging system
+- ✓ Status effects framework
+- ✓ Test harness for console testing
+
+### Phase 3: Combat UI ✓
+- ✓ Interactive combat screen with party/enemy HP displays
+- ✓ Color-coded HP bars (green → yellow → red)
+- ✓ Attack, Guard, and End Turn buttons
+- ✓ Scrolling combat log
+- ✓ Simple enemy AI (random targeting)
+- ✓ Victory/defeat detection
+- ✓ Visual guard indicators (🛡️)
+
+## Troubleshooting
+
+### Blank white/black screen?
+
+1. **Check browser console** (F12 → Console tab)
+   - Look for JavaScript errors
+   - Should see "Loading Dungeon Roll..." and initialization logs
+
+2. **Try development mode**: `npm run dev`
+   - Opens at http://localhost:5173/
+   - Provides better error messages
+
+3. **Check the console logs**:
+   ```
+   DOMContentLoaded event fired
+   Canvas element found
+   Babylon engine initialized
+   Game initialized
+   Combat UI ready!
+   ```
+
+4. **If you see errors**, common fixes:
+   - Clear browser cache
+   - Try a different browser
+   - Check console for specific error messages
+
+### Testing in console
+
+```javascript
+runCombatTest()     // Run automated combat test
+combat.show()       // Show combat UI
+combat.hide()       // Hide combat UI
+combat.enemyTurn()  // Trigger enemy attack manually
+```
 
 ## Thank you!
 
