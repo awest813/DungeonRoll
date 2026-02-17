@@ -1,5 +1,8 @@
 # Dungeon Roll - Tabletop JRPG Engine
 
+> ⚠️ **IMPORTANT:** Do NOT open `index.html` directly! Use `npm run dev` instead.
+> Opening HTML files directly causes CORS errors (blank screen). See [HOW_TO_RUN.md](HOW_TO_RUN.md) for details.
+
 ## Description
 
 A web-based tabletop JRPG engine inspired by Crimson Shroud, built with:
@@ -8,16 +11,27 @@ A web-based tabletop JRPG engine inspired by Crimson Shroud, built with:
 - Separation of pure rules logic from rendering
 - Data-driven content system
 
-## instructions
+## Quick Start
 
-- clone or download the repo
-- npm install
-- For development: `npm run dev`
-- For production: `npm run build` then to preview what was built `npm run preview`
+```bash
+# 1. Clone and install
+git clone <repo-url>
+cd DungeonRoll
+npm install
 
-## Development mode and debugging
-First `npm run dev`
-Then in vscode press F5, otherwise just open a browser at http://localhost:3000/
+# 2. Run development server (recommended)
+npm run dev
+# Opens at http://localhost:5173/
+
+# OR: Build and preview production
+npm run build
+npm run preview
+# Opens at http://localhost:4173/
+```
+
+**Note:** The dev server runs on port **5173**, not 3000.
+
+See [HOW_TO_RUN.md](HOW_TO_RUN.md) for detailed instructions and troubleshooting.
 
 ## Live Demo
 You can see this repository live here:
