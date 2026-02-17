@@ -8,10 +8,12 @@ import { createCombatUI, CombatUI } from '../../ui/createCombatUI';
 import { CombatUIController } from '../../ui/CombatUIController';
 import { CombatRenderer } from '../../render/CombatRenderer';
 import { createInitialRun } from '../bootstrap/createInitialRun';
+import { GameContent } from '../../content/loaders/types';
 
 export interface GameSessionConfig {
   ui: UI;
   scene: BABYLON.Scene;
+  content: GameContent;
   onStateChange?: (state: GameState) => void;
 }
 
@@ -19,11 +21,13 @@ export class GameSession {
   private readonly game: Game;
   private readonly scene: BABYLON.Scene;
   private readonly onStateChangeCallback?: (state: GameState) => void;
+  private readonly content: GameContent;
   private combatUI?: CombatUI;
   private combatController?: CombatUIController;
 
   constructor(config: GameSessionConfig) {
     this.scene = config.scene;
+    this.content = config.content;
     this.onStateChangeCallback = config.onStateChange;
     this.game = new Game({
       ui: config.ui,
@@ -53,7 +57,7 @@ export class GameSession {
   }
 
   private startCombatEncounter(): void {
-    const { party, enemy } = createInitialRun();
+    const { party, enemy } = createInitialRun(this.content);
     const combatLog = new CombatLog();
     const combatEngine = new CombatEngine(party, enemy, combatLog);
 
