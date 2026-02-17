@@ -76,7 +76,7 @@ export class GameSession {
       party,
       enemy,
       combatRenderer,
-      () => this.game.advance()
+      (victor) => this.game.dispatch(victor === 'party' ? 'WIN_COMBAT' : 'LOSE_COMBAT')
     );
 
     this.combatController.startTurn();
