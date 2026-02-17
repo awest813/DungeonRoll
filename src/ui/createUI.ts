@@ -33,10 +33,10 @@ export function createUI(): UI {
     <div id="state-value" style="font-size: 24px; font-weight: bold; margin-top: 5px;">TITLE</div>
   `;
 
-  // Advance button
+  // Next button
   const button = document.createElement('button');
-  button.id = 'advance-button';
-  button.textContent = 'Advance State';
+  button.id = 'next-button';
+  button.textContent = 'Next';
   button.style.cssText = `
     background: #4CAF50;
     color: white;
