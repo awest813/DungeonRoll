@@ -3,6 +3,7 @@
 import { Character, Enemy, CombatAction, CombatState, DamageResult } from './types';
 import { rollDiceExpression } from './dice';
 import { CombatLog } from './log';
+import { ITEM_DEFINITIONS } from '../content/gameContent';
 
 export class CombatEngine {
   private state: CombatState;
@@ -45,6 +46,66 @@ export class CombatEngine {
       case 'guard':
         this.executeGuard(actor);
         break;
+      case 'item':
+        this.executeItem(actor, action.itemId, action.targetId);
+        break;
+    }
+  }
+
+  private executeItem(
+    actor: Character | Enemy,
+    itemId?: string,
+    targetId?: string
+  ): void {
+    if (!itemId) {
+      this.log.add(`${actor.name} tried to use an unknown item.`);
+      return;
+    }
+
+    const item = ITEM_DEFINITIONS[itemId];
+    if (!item) {
+      this.log.add(`${actor.name} tried to use invalid item: ${itemId}.`);
+      return;
+    }
+
+    switch (item.effect.type) {
+      case 'heal': {
+        const target = targetId ? this.findCombatant(targetId) : actor;
+        if (!target) {
+          this.log.add(`${actor.name} has no valid heal target.`);
+          return;
+        }
+        const before = target.hp;
+        target.hp = Math.min(target.maxHp, target.hp + item.effect.value);
+        this.log.add(
+          `${actor.name} uses ${item.name} on ${target.name} (+${target.hp - before} HP).`
+        );
+        break;
+      }
+      case 'damage': {
+        const target = targetId ? this.findCombatant(targetId) : this.state.enemy;
+        if (!target) {
+          this.log.add(`${actor.name} has no valid damage target.`);
+          return;
+        }
+        target.hp = Math.max(0, target.hp - item.effect.value);
+        this.log.add(
+          `${actor.name} uses ${item.name} on ${target.name} for ${item.effect.value} damage.`
+        );
+        break;
+      }
+      case 'armor_boost': {
+        const target = targetId ? this.findCombatant(targetId) : actor;
+        if (!target) {
+          this.log.add(`${actor.name} has no valid armor target.`);
+          return;
+        }
+        target.armor += item.effect.value;
+        this.log.add(
+          `${actor.name} uses ${item.name} on ${target.name} (+${item.effect.value} armor).`
+        );
+        break;
+      }
     }
   }
 

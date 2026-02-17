@@ -32,12 +32,13 @@ export interface Enemy {
   statuses: StatusEffect[];
 }
 
-export type ActionType = 'attack' | 'guard';
+export type ActionType = 'attack' | 'guard' | 'item';
 
 export interface CombatAction {
   type: ActionType;
   actorId: string;
   targetId?: string;
+  itemId?: string;
 }
 
 export interface CombatState {

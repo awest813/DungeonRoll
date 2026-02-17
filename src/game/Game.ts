@@ -17,21 +17,24 @@ export class Game {
     this.onStateChangeCallback = config.onStateChange;
     this.stateMachine = createStateMachine('TITLE');
 
-    // Wire up UI button to advance state
     this.ui.onAdvance(() => this.advance());
-
-    // Initialize UI with current state
     this.ui.updateState(this.stateMachine.currentState);
   }
 
   advance(): void {
     this.stateMachine.advance();
-    const newState = this.stateMachine.currentState;
+    this.emitState();
+  }
 
-    // Update UI
+  transitionTo(state: GameState): void {
+    this.stateMachine.transitionTo(state);
+    this.emitState();
+  }
+
+  private emitState(): void {
+    const newState = this.stateMachine.currentState;
     this.ui.updateState(newState);
 
-    // Notify renderer if callback exists
     if (this.onStateChangeCallback) {
       this.onStateChangeCallback(newState);
     }
