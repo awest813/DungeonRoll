@@ -25,6 +25,8 @@ export function runCombatTest(): void {
       armor: 3,
       isGuarding: false,
       statuses: [],
+      resources: { actionPoints: 2, maxActionPoints: 2, initiative: 7 },
+      skills: [],
     },
     {
       id: 'hero2',
@@ -35,6 +37,8 @@ export function runCombatTest(): void {
       armor: 1,
       isGuarding: false,
       statuses: [],
+      resources: { actionPoints: 2, maxActionPoints: 2, initiative: 7 },
+      skills: [],
     },
     {
       id: 'hero3',
@@ -45,6 +49,8 @@ export function runCombatTest(): void {
       armor: 2,
       isGuarding: false,
       statuses: [],
+      resources: { actionPoints: 2, maxActionPoints: 2, initiative: 7 },
+      skills: [],
     },
   ];
 
@@ -58,6 +64,8 @@ export function runCombatTest(): void {
     armor: 2,
     isGuarding: false,
     statuses: [],
+    resources: { actionPoints: 2, maxActionPoints: 2, initiative: 5 },
+    skills: [],
   };
 
   // Initialize combat engine

@@ -1,26 +1,63 @@
 // Pure status effect system - no Babylon imports
 
-import { StatusType, StatusEffect, Character, Enemy } from './types';
+import {
+  StatusType,
+  StatusEffect,
+  Character,
+  Enemy,
+  StatusPayload,
+  StatusTimingWindow,
+} from './types';
 
 export type Combatant = Character | Enemy;
 
+export interface StatusTickResult {
+  status: StatusType;
+  expired: boolean;
+  damage?: number;
+}
+
 /**
- * Add a status effect to a character/enemy
+ * Add a status effect to a character/enemy with stack handling.
  */
 export function addStatus(
   holder: Combatant,
   type: StatusType,
-  duration: number,
-  value?: number
+  payload: StatusPayload
 ): void {
-  // Remove existing status of same type
-  holder.statuses = holder.statuses.filter(s => s.type !== type);
+  const existing = holder.statuses.find(s => s.type === type);
 
-  holder.statuses.push({
-    type,
-    duration,
-    value,
-  });
+  if (!existing) {
+    holder.statuses.push({
+      type,
+      duration: payload.duration,
+      value: payload.value,
+      stacks: 1,
+      stackRule: payload.stackRule,
+      timingWindow: payload.timingWindow,
+    });
+    return;
+  }
+
+  switch (payload.stackRule) {
+    case 'replace':
+      existing.duration = payload.duration;
+      existing.value = payload.value;
+      existing.stacks = 1;
+      break;
+    case 'stackDuration':
+      existing.duration += payload.duration;
+      existing.value = payload.value ?? existing.value;
+      break;
+    case 'stackIntensity':
+      existing.stacks += 1;
+      existing.duration = Math.max(existing.duration, payload.duration);
+      existing.value = payload.value ?? existing.value;
+      break;
+  }
+
+  existing.stackRule = payload.stackRule;
+  existing.timingWindow = payload.timingWindow;
 }
 
 /**
@@ -45,21 +82,37 @@ export function getStatus(holder: Combatant, type: StatusType): StatusEffect | u
 }
 
 /**
- * Tick down all status durations and remove expired ones
+ * Process statuses for a specific phase and decrement their durations.
  */
-export function tickStatuses(holder: Combatant): StatusType[] {
-  const expired: StatusType[] = [];
+export function tickStatusesByPhase(
+  holder: Combatant,
+  phase: StatusTimingWindow
+): StatusTickResult[] {
+  const ticks: StatusTickResult[] = [];
 
-  holder.statuses = holder.statuses.filter(status => {
-    status.duration--;
-    if (status.duration <= 0) {
-      expired.push(status.type);
-      return false;
+  holder.statuses.forEach(status => {
+    if (status.timingWindow !== phase) {
+      return;
     }
-    return true;
+
+    const result: StatusTickResult = {
+      status: status.type,
+      expired: false,
+    };
+
+    if (status.type === 'poisoned') {
+      const poisonDamage = (status.value ?? 1) * Math.max(1, status.stacks);
+      holder.hp = Math.max(0, holder.hp - poisonDamage);
+      result.damage = poisonDamage;
+    }
+
+    status.duration -= 1;
+    result.expired = status.duration <= 0;
+    ticks.push(result);
   });
 
-  return expired;
+  holder.statuses = holder.statuses.filter(s => s.duration > 0);
+  return ticks;
 }
 
 /**

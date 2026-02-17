@@ -16,6 +16,24 @@ export function createInitialRun(): InitialRun {
       armor: 3,
       isGuarding: false,
       statuses: [],
+      resources: { actionPoints: 2, maxActionPoints: 2, initiative: 7 },
+      skills: [
+        {
+          id: 'shield-bash',
+          name: 'Shield Bash',
+          description: 'A heavy strike that can stun the enemy.',
+          apCost: 2,
+          effectType: 'status',
+          target: 'enemy',
+          statusPayload: {
+            statusType: 'stunned',
+            duration: 1,
+            timingWindow: 'turnStart',
+            stackRule: 'replace',
+          },
+        },
+      ],
+      items: [{ id: 'potion', name: 'Potion', description: 'Restore 8 HP.', quantity: 1, apCost: 1, flatPower: 8, target: 'self' }],
     },
     {
       id: 'hero2',
@@ -26,6 +44,19 @@ export function createInitialRun(): InitialRun {
       armor: 1,
       isGuarding: false,
       statuses: [],
+      resources: { actionPoints: 2, maxActionPoints: 2, initiative: 9 },
+      skills: [
+        {
+          id: 'firebolt',
+          name: 'Firebolt',
+          description: 'Deal spell damage.',
+          apCost: 2,
+          effectType: 'damage',
+          diceExpression: '1d8',
+          flatPower: 2,
+          target: 'enemy',
+        },
+      ],
     },
     {
       id: 'hero3',
@@ -36,6 +67,24 @@ export function createInitialRun(): InitialRun {
       armor: 2,
       isGuarding: false,
       statuses: [],
+      resources: { actionPoints: 2, maxActionPoints: 2, initiative: 8 },
+      skills: [
+        {
+          id: 'poison-arrow',
+          name: 'Poison Arrow',
+          description: 'Apply poison over time.',
+          apCost: 2,
+          effectType: 'status',
+          target: 'enemy',
+          statusPayload: {
+            statusType: 'poisoned',
+            duration: 3,
+            value: 2,
+            timingWindow: 'turnEnd',
+            stackRule: 'stackIntensity',
+          },
+        },
+      ],
     },
   ];
 
@@ -48,6 +97,8 @@ export function createInitialRun(): InitialRun {
     armor: 2,
     isGuarding: false,
     statuses: [],
+    resources: { actionPoints: 2, maxActionPoints: 2, initiative: 6 },
+    skills: [],
   };
 
   return { party, enemy };
