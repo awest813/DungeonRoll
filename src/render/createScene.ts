@@ -7,19 +7,19 @@ export function createScene(engine: BABYLON.Engine, canvas: HTMLCanvasElement): 
   // Locked isometric-ish camera for diorama view
   const camera = new BABYLON.ArcRotateCamera(
     'camera',
-    Math.PI / 4,        // Alpha: 45 degrees horizontal
-    Math.PI / 3.5,      // Beta: comfy angle from vertical
-    12,                 // Radius: distance from target
-    BABYLON.Vector3.Zero(),
+    -Math.PI / 2,       // Alpha: View from the side
+    Math.PI / 3,        // Beta: Look down at 60 degrees
+    15,                 // Radius: distance from target
+    new BABYLON.Vector3(0, 0, 0),  // Look at center
     scene
   );
   camera.attachControl(canvas, true);
-  camera.lowerRadiusLimit = 12;
-  camera.upperRadiusLimit = 12;  // Lock zoom
-  camera.lowerAlphaLimit = Math.PI / 4;
-  camera.upperAlphaLimit = Math.PI / 4;  // Lock rotation
-  camera.lowerBetaLimit = Math.PI / 3.5;
-  camera.upperBetaLimit = Math.PI / 3.5;  // Lock tilt
+  camera.lowerRadiusLimit = 10;
+  camera.upperRadiusLimit = 20;  // Allow some zoom
+  camera.lowerAlphaLimit = -Math.PI;
+  camera.upperAlphaLimit = Math.PI;  // Allow rotation
+  camera.lowerBetaLimit = Math.PI / 6;
+  camera.upperBetaLimit = Math.PI / 2.2;  // Prevent going under ground
 
   // Lighting setup for tabletop feel
   const ambientLight = new BABYLON.HemisphericLight(
@@ -36,6 +36,11 @@ export function createScene(engine: BABYLON.Engine, canvas: HTMLCanvasElement): 
   );
   directionalLight.intensity = 0.5;
 
+  // Enable shadows
+  const shadowGenerator = new BABYLON.ShadowGenerator(1024, directionalLight);
+  shadowGenerator.useBlurExponentialShadowMap = true;
+  shadowGenerator.blurScale = 2;
+
   // Diorama board (ground)
   const ground = BABYLON.MeshBuilder.CreateGround(
     'ground',
@@ -47,6 +52,7 @@ export function createScene(engine: BABYLON.Engine, canvas: HTMLCanvasElement): 
   groundMaterial.diffuseColor = new BABYLON.Color3(0.3, 0.25, 0.2); // Brownish tabletop
   groundMaterial.specularColor = new BABYLON.Color3(0.1, 0.1, 0.1);
   ground.material = groundMaterial;
+  ground.receiveShadows = true;
 
   // Add a simple grid or border to make it feel like a board
   const border = BABYLON.MeshBuilder.CreateBox(
@@ -60,28 +66,8 @@ export function createScene(engine: BABYLON.Engine, canvas: HTMLCanvasElement): 
   borderMaterial.diffuseColor = new BABYLON.Color3(0.15, 0.1, 0.05);
   border.material = borderMaterial;
 
-  // Add simple minis (cylinders) to represent game pieces
-  const mini1 = BABYLON.MeshBuilder.CreateCylinder(
-    'mini1',
-    { height: 1.5, diameter: 0.5 },
-    scene
-  );
-  mini1.position.set(-2, 0.75, -2);
-
-  const mini1Material = new BABYLON.StandardMaterial('mini1Mat', scene);
-  mini1Material.diffuseColor = new BABYLON.Color3(0.2, 0.5, 0.8); // Blue
-  mini1.material = mini1Material;
-
-  const mini2 = BABYLON.MeshBuilder.CreateCylinder(
-    'mini2',
-    { height: 1.5, diameter: 0.5 },
-    scene
-  );
-  mini2.position.set(2, 0.75, 1);
-
-  const mini2Material = new BABYLON.StandardMaterial('mini2Mat', scene);
-  mini2Material.diffuseColor = new BABYLON.Color3(0.8, 0.3, 0.2); // Red
-  mini2.material = mini2Material;
+  // Store shadow generator on scene for combat renderer to use
+  (scene as any).shadowGenerator = shadowGenerator;
 
   return scene;
 }

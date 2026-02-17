@@ -1,9 +1,10 @@
-// Bridges the rules engine with the combat UI
+// Bridges the rules engine with the combat UI and 3D renderer
 
 import { Character, Enemy } from '../rules/types';
 import { CombatEngine } from '../rules/combat';
 import { CombatLog } from '../rules/log';
 import { CombatUI } from './createCombatUI';
+import { CombatRenderer } from '../render/CombatRenderer';
 
 export class CombatUIController {
   private combat: CombatEngine;
@@ -12,19 +13,22 @@ export class CombatUIController {
   private party: Character[];
   private enemy: Enemy;
   private currentTurn: number = 0;
+  private renderer?: CombatRenderer;
 
   constructor(
     combat: CombatEngine,
     log: CombatLog,
     ui: CombatUI,
     party: Character[],
-    enemy: Enemy
+    enemy: Enemy,
+    renderer?: CombatRenderer
   ) {
     this.combat = combat;
     this.log = log;
     this.ui = ui;
     this.party = party;
     this.enemy = enemy;
+    this.renderer = renderer;
 
     this.setupEventHandlers();
     this.refresh();
@@ -40,14 +44,37 @@ export class CombatUIController {
       }
 
       console.log(`${hero.name} attacks!`);
-      this.combat.executeAction({
-        type: 'attack',
-        actorId: hero.id,
-        targetId: this.enemy.id,
-      });
 
-      this.refresh();
-      this.checkCombatEnd();
+      // Play attack animation first, then execute combat
+      if (this.renderer) {
+        this.renderer.playAttackAnimation(hero.id, this.enemy.id, () => {
+          const enemyHPBefore = this.enemy.hp;
+
+          this.combat.executeAction({
+            type: 'attack',
+            actorId: hero.id,
+            targetId: this.enemy.id,
+          });
+
+          // Play hit animation if damage was dealt
+          if (this.enemy.hp < enemyHPBefore) {
+            this.renderer!.playHitAnimation(this.enemy.id);
+            this.renderer!.updateUnitHP(this.enemy.id, this.enemy.hp, this.enemy.maxHp);
+          }
+
+          this.refresh();
+          this.checkCombatEnd();
+        });
+      } else {
+        this.combat.executeAction({
+          type: 'attack',
+          actorId: hero.id,
+          targetId: this.enemy.id,
+        });
+
+        this.refresh();
+        this.checkCombatEnd();
+      }
     });
 
     // Handle guard button
@@ -63,6 +90,11 @@ export class CombatUIController {
         type: 'guard',
         actorId: hero.id,
       });
+
+      // Play guard animation
+      if (this.renderer) {
+        this.renderer.playGuardAnimation(hero.id, true);
+      }
 
       this.refresh();
     });
@@ -103,14 +135,43 @@ export class CombatUIController {
     const target = aliveParty[Math.floor(Math.random() * aliveParty.length)];
 
     console.log(`Enemy turn: attacking ${target.name}`);
-    this.combat.executeAction({
-      type: 'attack',
-      actorId: this.enemy.id,
-      targetId: target.id,
-    });
 
-    this.refresh();
-    this.checkCombatEnd();
+    // Play attack animation first, then execute combat
+    if (this.renderer) {
+      this.renderer.playAttackAnimation(this.enemy.id, target.id, () => {
+        const targetHPBefore = target.hp;
+        const wasGuarding = target.isGuarding;
+
+        this.combat.executeAction({
+          type: 'attack',
+          actorId: this.enemy.id,
+          targetId: target.id,
+        });
+
+        // Play hit animation if damage was dealt
+        if (target.hp < targetHPBefore) {
+          this.renderer!.playHitAnimation(target.id);
+          this.renderer!.updateUnitHP(target.id, target.hp, target.maxHp);
+        }
+
+        // Update guard visual if guard was broken
+        if (wasGuarding && !target.isGuarding) {
+          this.renderer!.playGuardAnimation(target.id, false);
+        }
+
+        this.refresh();
+        this.checkCombatEnd();
+      });
+    } else {
+      this.combat.executeAction({
+        type: 'attack',
+        actorId: this.enemy.id,
+        targetId: target.id,
+      });
+
+      this.refresh();
+      this.checkCombatEnd();
+    }
   }
 
   /**
@@ -134,6 +195,17 @@ export class CombatUIController {
       maxHp: this.enemy.maxHp,
       isGuarding: this.enemy.isGuarding,
     });
+
+    // Update 3D visuals if renderer exists
+    if (this.renderer) {
+      // Update party HP bars (skip HP update during animations as it's handled there)
+      this.party.forEach(char => {
+        this.renderer!.playGuardAnimation(char.id, char.isGuarding);
+      });
+
+      // Update enemy guard status
+      this.renderer.playGuardAnimation(this.enemy.id, this.enemy.isGuarding);
+    }
 
     // Update combat log (get recent entries)
     const messages = this.log.getMessages();

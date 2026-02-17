@@ -6,6 +6,7 @@ import { GameState } from './game/stateMachine';
 import { runCombatTest } from './rules/testHarness';
 import { createCombatUI } from './ui/createCombatUI';
 import { CombatUIController } from './ui/CombatUIController';
+import { CombatRenderer } from './render/CombatRenderer';
 import { Character, Enemy } from './rules/types';
 import { CombatEngine } from './rules/combat';
 import { CombatLog } from './rules/log';
@@ -132,13 +133,20 @@ window.addEventListener('DOMContentLoaded', () => {
   // Create combat UI
   const combatUI = createCombatUI();
 
-  // Create controller to bridge rules and UI
+  // Create 3D combat renderer
+  const combatRenderer = new CombatRenderer(scene);
+  combatRenderer.createPartyMeshes(party);
+  combatRenderer.createEnemyMesh(enemy);
+  console.log('Combat renderer created with party and enemy meshes');
+
+  // Create controller to bridge rules, UI, and 3D renderer
   const combatController = new CombatUIController(
     combatEngine,
     combatLog,
     combatUI,
     party,
-    enemy
+    enemy,
+    combatRenderer
   );
 
     // Start combat and show UI
