@@ -7,12 +7,13 @@ import { loadGameContent } from '../content/loaders';
 import { createInitialRun } from '../game/bootstrap/createInitialRun';
 
 /**
- * Run a simulated combat turn to test the rules engine
+ * Run a simulated combat encounter to test the rules engine
  */
 export function runCombatTest(): void {
   console.log('Initializing combat test...\n');
 
-  const { party, enemy } = createInitialRun(loadGameContent());
+  const content = loadGameContent();
+  const { party, enemies } = createInitialRun(content);
   const [tank, second, third] = party;
 
   if (!tank || !second || !third) {
@@ -22,15 +23,29 @@ export function runCombatTest(): void {
   // Create combat log
   const log = new CombatLog();
 
-  // Initialize combat engine
-  const combat = new CombatEngine(party, enemy, log);
+  // Initialize combat engine with multi-enemy support
+  const combat = new CombatEngine(party, enemies, log, content);
 
   console.log('Party:');
   party.forEach((char) => {
-    console.log(`  ${char.name}: HP ${char.hp}/${char.maxHp}, ATK ${char.attack}, ARM ${char.armor}`);
+    console.log(
+      `  ${char.name} (Lv${char.level} ${char.characterClass}): ` +
+      `HP ${char.hp}/${char.maxHp}, MP ${char.mp}/${char.maxMp}, ` +
+      `ATK ${char.attack}, ARM ${char.armor}, SPD ${char.speed}`
+    );
+    if (char.skillIds.length > 0) {
+      const skillNames = char.skillIds.map(id => content.skills.get(id)?.name ?? id);
+      console.log(`    Skills: ${skillNames.join(', ')}`);
+    }
   });
-  console.log(`\nEnemy:`);
-  console.log(`  ${enemy.name}: HP ${enemy.hp}/${enemy.maxHp}, ATK ${enemy.attack}, ARM ${enemy.armor}`);
+
+  console.log(`\nEnemies:`);
+  enemies.forEach((enemy) => {
+    console.log(
+      `  ${enemy.name}: HP ${enemy.hp}/${enemy.maxHp}, MP ${enemy.mp}/${enemy.maxMp}, ` +
+      `ATK ${enemy.attack}, ARM ${enemy.armor}, SPD ${enemy.speed} (${enemy.xpReward} XP)`
+    );
+  });
   console.log('');
 
   // Test dice rolling
@@ -40,6 +55,11 @@ export function runCombatTest(): void {
   console.log(`d20: ${rollDiceExpression('1d20')}`);
   console.log(`3d8-2: ${rollDiceExpression('3d8-2')}`);
   console.log('');
+
+  const firstEnemy = enemies[0];
+  if (!firstEnemy) {
+    throw new Error('No enemies in encounter');
+  }
 
   // Turn 1: first party member guards, others attack
   combat.startTurn();
@@ -52,77 +72,93 @@ export function runCombatTest(): void {
   combat.executeAction({
     type: 'attack',
     actorId: second.id,
-    targetId: enemy.id,
+    targetId: firstEnemy.id,
   });
 
   combat.executeAction({
     type: 'attack',
     actorId: third.id,
-    targetId: enemy.id,
+    targetId: firstEnemy.id,
   });
 
-  // Enemy attacks first party member
+  // First enemy attacks tank
   combat.executeAction({
     type: 'attack',
-    actorId: enemy.id,
+    actorId: firstEnemy.id,
     targetId: tank.id,
   });
 
   console.log('');
 
-  // Turn 2: All party members attack
+  // Turn 2: Test skill usage
   combat.startTurn();
 
-  combat.executeAction({
-    type: 'attack',
-    actorId: tank.id,
-    targetId: enemy.id,
+  // Tank uses a skill if available
+  const tankSkill = tank.skillIds.find(id => {
+    const s = content.skills.get(id);
+    return s && s.id !== 'basic-attack' && tank.mp >= s.mpCost;
   });
 
-  combat.executeAction({
-    type: 'attack',
-    actorId: second.id,
-    targetId: enemy.id,
-  });
-
-  combat.executeAction({
-    type: 'attack',
-    actorId: third.id,
-    targetId: enemy.id,
-  });
-
-  // Enemy attacks second party member
-  combat.executeAction({
-    type: 'attack',
-    actorId: enemy.id,
-    targetId: second.id,
-  });
-
-  console.log('');
-
-  // Turn 3: Test edge cases
-  combat.startTurn();
-
-  // Get current state for testing
-  let state = combat.getState();
-
-  // Test: Try to attack already defeated enemy (if defeated)
-  if (state.enemy && state.enemy.hp <= 0) {
-    console.log('Testing dead target validation...');
+  if (tankSkill) {
+    combat.executeAction({
+      type: 'skill',
+      actorId: tank.id,
+      skillId: tankSkill,
+      targetId: firstEnemy.id,
+    });
+  } else {
     combat.executeAction({
       type: 'attack',
       actorId: tank.id,
-      targetId: enemy.id,
+      targetId: firstEnemy.id,
     });
   }
 
-  // Test: Try to have party member attack another party member
-  console.log('Testing friendly fire prevention...');
+  // Second party member attacks
+  const aliveEnemy = enemies.find(e => e.hp > 0) ?? firstEnemy;
   combat.executeAction({
     type: 'attack',
-    actorId: tank.id,
-    targetId: second.id,
+    actorId: second.id,
+    targetId: aliveEnemy.id,
   });
+
+  // Third party member uses item
+  if (third.inventory.length > 0) {
+    combat.executeAction({
+      type: 'item',
+      actorId: third.id,
+      itemId: third.inventory[0].itemId,
+      targetId: third.id,
+    });
+  }
+
+  // Remaining enemies attack
+  for (const enemy of enemies) {
+    if (enemy.hp <= 0) continue;
+    const target = party.find(c => c.hp > 0);
+    if (!target) break;
+    combat.executeAction({
+      type: 'attack',
+      actorId: enemy.id,
+      targetId: target.id,
+    });
+  }
+
+  console.log('');
+
+  // Turn 3: All-out attack
+  combat.startTurn();
+
+  for (const char of party) {
+    if (char.hp <= 0) continue;
+    const target = enemies.find(e => e.hp > 0);
+    if (!target) break;
+    combat.executeAction({
+      type: 'attack',
+      actorId: char.id,
+      targetId: target.id,
+    });
+  }
 
   console.log('');
 
@@ -132,19 +168,23 @@ export function runCombatTest(): void {
 
   console.log('');
   console.log('--- Final State ---');
-  state = combat.getState();
+  const state = combat.getState();
   console.log('Party:');
   state.party.forEach((char) => {
-    console.log(`  ${char.name}: HP ${char.hp}/${char.maxHp}`);
+    console.log(`  ${char.name}: HP ${char.hp}/${char.maxHp}, MP ${char.mp}/${char.maxMp}`);
   });
-  if (state.enemy) {
-    console.log(`Enemy:`);
-    console.log(`  ${state.enemy.name}: HP ${state.enemy.hp}/${state.enemy.maxHp}`);
-  }
+  console.log('Enemies:');
+  state.enemies.forEach((enemy) => {
+    console.log(`  ${enemy.name}: HP ${enemy.hp}/${enemy.maxHp}`);
+  });
 
   if (combat.isOver()) {
     const victor = combat.getVictor();
     console.log(`\nCombat Over! Winner: ${victor}`);
+    if (victor === 'party') {
+      console.log(`XP Reward: ${combat.getTotalXpReward()}`);
+      console.log(`Gold Reward: ${combat.getTotalGoldReward()}`);
+    }
   } else {
     console.log(`\nCombat continues...`);
   }

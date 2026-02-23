@@ -1,11 +1,136 @@
 {
   "enemies": [
     {
+      "id": "goblin-grunt",
+      "name": "Goblin Grunt",
+      "hp": 20,
+      "mp": 0,
+      "attack": 3,
+      "armor": 1,
+      "speed": 4,
+      "xpReward": 15,
+      "goldReward": 5,
+      "skillIds": ["basic-attack"]
+    },
+    {
       "id": "goblin-chief",
       "name": "Goblin Chief",
-      "hp": 40,
+      "hp": 45,
+      "mp": 5,
+      "attack": 5,
+      "armor": 3,
+      "speed": 5,
+      "xpReward": 40,
+      "goldReward": 15,
+      "skillIds": ["basic-attack", "power-strike"]
+    },
+    {
+      "id": "goblin-shaman",
+      "name": "Goblin Shaman",
+      "hp": 25,
+      "mp": 20,
+      "attack": 2,
+      "armor": 1,
+      "speed": 3,
+      "xpReward": 35,
+      "goldReward": 12,
+      "skillIds": ["basic-attack", "poison-bolt"]
+    },
+    {
+      "id": "skeleton-warrior",
+      "name": "Skeleton Warrior",
+      "hp": 30,
+      "mp": 0,
       "attack": 4,
-      "armor": 2
+      "armor": 4,
+      "speed": 2,
+      "xpReward": 25,
+      "goldReward": 8,
+      "skillIds": ["basic-attack"]
+    },
+    {
+      "id": "skeleton-archer",
+      "name": "Skeleton Archer",
+      "hp": 22,
+      "mp": 0,
+      "attack": 6,
+      "armor": 1,
+      "speed": 5,
+      "xpReward": 28,
+      "goldReward": 10,
+      "skillIds": ["basic-attack", "aimed-shot"]
+    },
+    {
+      "id": "skeleton-mage",
+      "name": "Skeleton Mage",
+      "hp": 25,
+      "mp": 30,
+      "attack": 2,
+      "armor": 1,
+      "speed": 3,
+      "xpReward": 45,
+      "goldReward": 18,
+      "skillIds": ["basic-attack", "fire-bolt", "weaken"]
+    },
+    {
+      "id": "dire-wolf",
+      "name": "Dire Wolf",
+      "hp": 35,
+      "mp": 0,
+      "attack": 7,
+      "armor": 2,
+      "speed": 8,
+      "xpReward": 30,
+      "goldReward": 5,
+      "skillIds": ["basic-attack"]
+    },
+    {
+      "id": "cave-troll",
+      "name": "Cave Troll",
+      "hp": 80,
+      "mp": 0,
+      "attack": 8,
+      "armor": 5,
+      "speed": 2,
+      "xpReward": 75,
+      "goldReward": 30,
+      "skillIds": ["basic-attack", "power-strike"]
+    },
+    {
+      "id": "dark-knight",
+      "name": "Dark Knight",
+      "hp": 60,
+      "mp": 10,
+      "attack": 7,
+      "armor": 6,
+      "speed": 4,
+      "xpReward": 65,
+      "goldReward": 25,
+      "skillIds": ["basic-attack", "power-strike", "weaken"]
+    },
+    {
+      "id": "necromancer",
+      "name": "Necromancer",
+      "hp": 50,
+      "mp": 40,
+      "attack": 3,
+      "armor": 2,
+      "speed": 4,
+      "xpReward": 80,
+      "goldReward": 35,
+      "skillIds": ["basic-attack", "fire-bolt", "poison-bolt", "weaken"]
+    },
+    {
+      "id": "dragon-whelp",
+      "name": "Dragon Whelp",
+      "hp": 100,
+      "mp": 20,
+      "attack": 9,
+      "armor": 7,
+      "speed": 6,
+      "xpReward": 120,
+      "goldReward": 60,
+      "skillIds": ["basic-attack", "fire-bolt", "power-strike"]
     }
   ]
 }
