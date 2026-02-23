@@ -1,6 +1,5 @@
 import * as BABYLON from 'babylonjs';
 import { createScene } from './render/createScene';
-import { createUI } from './ui/createUI';
 import { GameState } from './game/stateMachine';
 import { runCombatTest } from './rules/testHarness';
 import { GameSession } from './game/session/GameSession';
@@ -26,7 +25,6 @@ window.addEventListener('DOMContentLoaded', () => {
 
   const engine = new BABYLON.Engine(canvas, true);
   const scene = createScene(engine, canvas);
-  const ui = createUI();
 
   let content;
   try {
@@ -37,11 +35,10 @@ window.addEventListener('DOMContentLoaded', () => {
   }
 
   const session = new GameSession({
-    ui,
     scene,
     content,
     onStateChange: (state: GameState) => {
-      console.log(`Scene responding to state: ${state}`);
+      console.log(`State: ${state}`);
     },
   });
 
