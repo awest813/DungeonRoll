@@ -72,6 +72,7 @@ export function createRewardScreen(): RewardScreen {
     padding: 24px;
     text-align: center;
     border-bottom: 2px solid #4CAF50;
+    border-radius: 8px 8px 0 0;
   `;
   header.innerHTML = `
     <div style="font-size: 36px; font-weight: bold; color: #ffa500; text-shadow: 0 0 15px rgba(255, 165, 0, 0.4); letter-spacing: 6px;">

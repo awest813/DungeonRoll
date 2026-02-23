@@ -47,6 +47,7 @@ export interface CombatUI {
   onSkill(callback: (heroIndex: number, skillId: string, targetIndex: number, isAlly: boolean) => void): void;
   onItem(callback: (heroIndex: number, itemId: string, targetIndex: number) => void): void;
   onEndTurn(callback: () => void): void;
+  onHeroSelect(callback: (heroIndex: number) => void): void;
   setActionsEnabled(enabled: boolean): void;
   destroy(): void;
 }
@@ -73,13 +74,15 @@ export function createCombatUI(): CombatUI {
 
   const titleEl = document.createElement('div');
   titleEl.style.cssText = `
-    background: #4CAF50;
-    color: #000;
+    background: linear-gradient(135deg, rgba(76, 175, 80, 0.4), rgba(20, 20, 30, 0.9));
+    color: #4CAF50;
     padding: 12px;
     font-size: 18px;
     font-weight: bold;
     text-align: center;
-    border-bottom: 2px solid #45a049;
+    letter-spacing: 4px;
+    border-bottom: 2px solid #4CAF50;
+    border-radius: 8px 8px 0 0;
   `;
   titleEl.textContent = 'COMBAT';
 
@@ -97,26 +100,26 @@ export function createCombatUI(): CombatUI {
 
   const partySection = document.createElement('div');
   partySection.style.cssText = `
-    background: rgba(0, 100, 0, 0.2);
-    border: 1px solid #4CAF50;
+    background: rgba(0, 100, 0, 0.15);
+    border: 1px solid rgba(76, 175, 80, 0.5);
     border-radius: 5px;
-    padding: 8px;
+    padding: 10px;
   `;
   partySection.innerHTML = `
-    <div style="font-size: 14px; font-weight: bold; margin-bottom: 8px; color: #4CAF50;">YOUR PARTY</div>
-    <div id="party-list"></div>
+    <div style="font-size: 12px; font-weight: bold; margin-bottom: 8px; color: #4CAF50; letter-spacing: 2px;">YOUR PARTY</div>
+    <div id="combat-party-list"></div>
   `;
 
   const enemySection = document.createElement('div');
   enemySection.style.cssText = `
-    background: rgba(100, 0, 0, 0.2);
-    border: 1px solid #f44336;
+    background: rgba(100, 0, 0, 0.15);
+    border: 1px solid rgba(244, 67, 54, 0.5);
     border-radius: 5px;
-    padding: 8px;
+    padding: 10px;
   `;
   enemySection.innerHTML = `
-    <div style="font-size: 14px; font-weight: bold; margin-bottom: 8px; color: #f44336;">ENEMIES</div>
-    <div id="enemy-list"></div>
+    <div style="font-size: 12px; font-weight: bold; margin-bottom: 8px; color: #f44336; letter-spacing: 2px;">ENEMIES</div>
+    <div id="combat-enemy-list"></div>
   `;
 
   leftPanel.appendChild(partySection);
@@ -127,33 +130,33 @@ export function createCombatUI(): CombatUI {
 
   const actionsSection = document.createElement('div');
   actionsSection.style.cssText = `
-    background: rgba(0, 0, 100, 0.2);
-    border: 1px solid #2196F3;
+    background: rgba(0, 0, 100, 0.15);
+    border: 1px solid rgba(33, 150, 243, 0.5);
     border-radius: 5px;
-    padding: 8px;
+    padding: 10px;
   `;
   actionsSection.innerHTML = `
-    <div style="font-size: 14px; font-weight: bold; margin-bottom: 8px; color: #2196F3;">ACTIONS</div>
-    <div id="action-buttons"></div>
+    <div style="font-size: 12px; font-weight: bold; margin-bottom: 8px; color: #2196F3; letter-spacing: 2px;">ACTIONS</div>
+    <div id="combat-action-buttons"></div>
   `;
 
   const logSection = document.createElement('div');
   logSection.style.cssText = `
-    background: rgba(0, 0, 0, 0.5);
-    border: 1px solid #888;
+    background: rgba(0, 0, 0, 0.4);
+    border: 1px solid rgba(136, 136, 136, 0.4);
     border-radius: 5px;
-    padding: 8px;
+    padding: 10px;
     flex: 1;
     display: flex;
     flex-direction: column;
   `;
   logSection.innerHTML = `
-    <div style="font-size: 14px; font-weight: bold; margin-bottom: 8px; color: #ffa500;">COMBAT LOG</div>
-    <div id="combat-log" style="
+    <div style="font-size: 12px; font-weight: bold; margin-bottom: 8px; color: #ffa500; letter-spacing: 2px;">COMBAT LOG</div>
+    <div id="combat-log-entries" style="
       flex: 1;
       overflow-y: auto;
       font-size: 11px;
-      line-height: 1.4;
+      line-height: 1.5;
       min-height: 150px;
       max-height: 300px;
     "></div>
@@ -174,6 +177,7 @@ export function createCombatUI(): CombatUI {
   let skillCallback: ((heroIndex: number, skillId: string, targetIndex: number, isAlly: boolean) => void) | null = null;
   let itemCallback: ((heroIndex: number, itemId: string, targetIndex: number) => void) | null = null;
   let endTurnCallback: (() => void) | null = null;
+  let heroSelectCallback: ((heroIndex: number) => void) | null = null;
   let selectedHeroIndex = 0;
   let selectedEnemyIndex = 0;
   let actionsEnabled = true;
@@ -184,54 +188,60 @@ export function createCombatUI(): CombatUI {
   let currentMp = 0;
   let actionMode: 'main' | 'skills' | 'items' = 'main';
 
-  function actionBtnStyle(color: string): string {
+  function actionBtnStyle(color: string, disabled: boolean): string {
     return `
       width: 100%;
       padding: 10px;
       margin-bottom: 6px;
-      background: ${color};
-      color: white;
-      border: none;
+      background: ${disabled ? 'rgba(60, 60, 60, 0.6)' : color};
+      color: ${disabled ? '#666' : 'white'};
+      border: 1px solid ${disabled ? '#555' : color};
       border-radius: 4px;
       font-size: 13px;
       font-family: 'Courier New', monospace;
-      cursor: pointer;
+      cursor: ${disabled ? 'not-allowed' : 'pointer'};
       font-weight: bold;
-      transition: opacity 0.2s, transform 0.1s;
+      transition: opacity 0.15s, transform 0.1s;
+      outline: none;
+      opacity: ${disabled ? '0.5' : '1'};
+    `;
+  }
+
+  function selectBtnStyle(selected: boolean, color: string, dead: boolean): string {
+    return `
+      padding: 4px 10px; margin: 2px;
+      background: ${dead ? 'rgba(60, 60, 60, 0.3)' : selected ? color : `${color}33`};
+      color: ${dead ? '#666' : 'white'};
+      border: 1px solid ${dead ? '#555' : color};
+      border-radius: 3px;
+      font-size: 11px; font-family: 'Courier New', monospace;
+      cursor: ${dead ? 'not-allowed' : 'pointer'};
+      outline: none;
+      transition: background 0.15s;
+      opacity: ${dead ? '0.4' : '1'};
     `;
   }
 
   function renderActionButtons() {
-    const actionButtons = document.getElementById('action-buttons');
+    const actionButtons = document.getElementById('combat-action-buttons');
     if (!actionButtons) return;
+
+    const dis = !actionsEnabled;
 
     const heroSelector = currentParty
       .map(
         (char, index) => `
-        <button class="hero-select" data-index="${index}" style="
-          padding: 4px 10px; margin: 2px;
-          background: ${selectedHeroIndex === index ? '#4CAF50' : 'rgba(76, 175, 80, 0.3)'};
-          color: white; border: 1px solid #4CAF50; border-radius: 3px;
-          font-size: 11px; font-family: 'Courier New', monospace; cursor: pointer;
-          transition: background 0.2s;
-          ${char.hp <= 0 ? 'opacity: 0.3; cursor: not-allowed;' : ''}
-        ">${char.name}</button>`
+        <button class="hero-select" data-index="${index}" style="${selectBtnStyle(selectedHeroIndex === index, '#4CAF50', char.hp <= 0)}">${char.name}</button>`
       )
       .join('');
 
     const enemySelector = currentEnemies.length > 0
       ? `<div style="margin-bottom: 8px;">
-          <div style="font-size: 11px; color: #aaa; margin-bottom: 4px;">Target:</div>
+          <div style="font-size: 10px; color: #999; margin-bottom: 4px; letter-spacing: 1px;">TARGET:</div>
           ${currentEnemies
             .map(
               (enemy, index) => `
-              <button class="enemy-select" data-index="${index}" style="
-                padding: 4px 10px; margin: 2px;
-                background: ${selectedEnemyIndex === index ? '#f44336' : 'rgba(244, 67, 54, 0.3)'};
-                color: white; border: 1px solid #f44336; border-radius: 3px;
-                font-size: 11px; font-family: 'Courier New', monospace; cursor: pointer;
-                ${enemy.hp <= 0 ? 'opacity: 0.3; cursor: not-allowed;' : ''}
-              ">${enemy.name}</button>`
+              <button class="enemy-select" data-index="${index}" style="${selectBtnStyle(selectedEnemyIndex === index, '#f44336', enemy.hp <= 0)}">${enemy.name}</button>`
             )
             .join('')}
         </div>`
@@ -240,34 +250,37 @@ export function createCombatUI(): CombatUI {
     if (actionMode === 'main') {
       actionButtons.innerHTML = `
         <div style="margin-bottom: 8px;">
-          <div style="font-size: 11px; color: #aaa; margin-bottom: 4px;">Hero:</div>
+          <div style="font-size: 10px; color: #999; margin-bottom: 4px; letter-spacing: 1px;">HERO:</div>
           ${heroSelector}
         </div>
         ${enemySelector}
-        <button id="attack-btn" class="action-btn" style="${actionBtnStyle('#f44336')}" ${!actionsEnabled ? 'disabled' : ''}>ATTACK</button>
-        <button id="guard-btn" class="action-btn" style="${actionBtnStyle('#2196F3')}" ${!actionsEnabled ? 'disabled' : ''}>GUARD</button>
-        <button id="skills-btn" class="action-btn" style="${actionBtnStyle('#9C27B0')}" ${!actionsEnabled ? 'disabled' : ''}>SKILLS</button>
-        <button id="items-btn" class="action-btn" style="${actionBtnStyle('#FF9800')}" ${!actionsEnabled ? 'disabled' : ''}>ITEMS</button>
-        <button id="end-turn-btn" class="action-btn" style="${actionBtnStyle('#607D8B')}" ${!actionsEnabled ? 'disabled' : ''}>END TURN</button>
+        <button id="combat-attack-btn" class="action-btn" style="${actionBtnStyle('#c62828', dis)}" ${dis ? 'disabled' : ''}>ATTACK</button>
+        <button id="combat-guard-btn" class="action-btn" style="${actionBtnStyle('#1565C0', dis)}" ${dis ? 'disabled' : ''}>GUARD</button>
+        <button id="combat-skills-btn" class="action-btn" style="${actionBtnStyle('#6A1B9A', dis)}" ${dis ? 'disabled' : ''}>SKILLS</button>
+        <button id="combat-items-btn" class="action-btn" style="${actionBtnStyle('#E65100', dis)}" ${dis ? 'disabled' : ''}>ITEMS</button>
+        <button id="combat-end-turn-btn" class="action-btn" style="${actionBtnStyle('#37474F', dis)}" ${dis ? 'disabled' : ''}>END TURN</button>
       `;
     } else if (actionMode === 'skills') {
-      const skillButtons = currentSkills.map(skill => `
+      const skillButtons = currentSkills.map(skill => {
+        const canUse = currentMp >= skill.mpCost && actionsEnabled;
+        return `
         <button class="skill-btn" data-skill-id="${skill.id}" style="
           width: 100%; padding: 8px; margin-bottom: 4px;
-          background: ${currentMp >= skill.mpCost ? 'rgba(156, 39, 176, 0.4)' : 'rgba(100, 100, 100, 0.3)'};
-          color: ${currentMp >= skill.mpCost ? 'white' : '#888'};
-          border: 1px solid ${currentMp >= skill.mpCost ? '#9C27B0' : '#555'};
+          background: ${canUse ? 'rgba(106, 27, 154, 0.35)' : 'rgba(60, 60, 60, 0.3)'};
+          color: ${canUse ? '#CE93D8' : '#666'};
+          border: 1px solid ${canUse ? 'rgba(156, 39, 176, 0.6)' : '#444'};
           border-radius: 4px; font-size: 11px; font-family: 'Courier New', monospace;
-          cursor: ${currentMp >= skill.mpCost ? 'pointer' : 'not-allowed'};
-          text-align: left; transition: background 0.2s;
-        " title="${skill.description}" ${currentMp < skill.mpCost || !actionsEnabled ? 'disabled' : ''}>
-          ${skill.name} ${skill.mpCost > 0 ? `(${skill.mpCost} MP)` : ''}
+          cursor: ${canUse ? 'pointer' : 'not-allowed'};
+          text-align: left; transition: background 0.15s;
+          outline: none; opacity: ${canUse ? '1' : '0.5'};
+        " title="${skill.description}" ${!canUse ? 'disabled' : ''}>
+          ${skill.name} ${skill.mpCost > 0 ? `<span style="color: ${canUse ? '#64B5F6' : '#555'};">(${skill.mpCost} MP)</span>` : ''}
         </button>
-      `).join('');
+      `}).join('');
 
       actionButtons.innerHTML = `
         <div style="margin-bottom: 8px;">
-          <button id="back-btn" style="${actionBtnStyle('#607D8B')}">BACK</button>
+          <button id="combat-back-btn" style="${actionBtnStyle('#37474F', false)}">BACK</button>
         </div>
         ${enemySelector}
         ${skillButtons}
@@ -276,20 +289,23 @@ export function createCombatUI(): CombatUI {
       const itemButtons = currentItems.filter(i => i.quantity > 0).map(item => `
         <button class="item-btn" data-item-id="${item.itemId}" style="
           width: 100%; padding: 8px; margin-bottom: 4px;
-          background: rgba(255, 152, 0, 0.4); color: white;
-          border: 1px solid #FF9800; border-radius: 4px;
-          font-size: 11px; font-family: 'Courier New', monospace;
-          cursor: pointer; text-align: left; transition: background 0.2s;
+          background: ${actionsEnabled ? 'rgba(230, 81, 0, 0.3)' : 'rgba(60, 60, 60, 0.3)'};
+          color: ${actionsEnabled ? '#FFB74D' : '#666'};
+          border: 1px solid ${actionsEnabled ? 'rgba(255, 152, 0, 0.5)' : '#444'};
+          border-radius: 4px; font-size: 11px; font-family: 'Courier New', monospace;
+          cursor: ${actionsEnabled ? 'pointer' : 'not-allowed'}; text-align: left;
+          transition: background 0.15s; outline: none;
+          opacity: ${actionsEnabled ? '1' : '0.5'};
         " ${!actionsEnabled ? 'disabled' : ''}>
-          ${item.name} x${item.quantity}
+          ${item.name} <span style="color: ${actionsEnabled ? '#aaa' : '#555'};">x${item.quantity}</span>
         </button>
       `).join('');
 
       actionButtons.innerHTML = `
         <div style="margin-bottom: 8px;">
-          <button id="back-btn" style="${actionBtnStyle('#607D8B')}">BACK</button>
+          <button id="combat-back-btn" style="${actionBtnStyle('#37474F', false)}">BACK</button>
         </div>
-        ${itemButtons.length > 0 ? itemButtons : '<div style="color: #888; font-size: 11px;">No items available</div>'}
+        ${itemButtons.length > 0 ? itemButtons : '<div style="color: #666; font-size: 11px; padding: 4px;">No items available</div>'}
       `;
     }
 
@@ -299,6 +315,7 @@ export function createCombatUI(): CombatUI {
         const idx = parseInt((btn as HTMLElement).dataset.index!, 10);
         if (currentParty[idx]?.hp > 0) {
           selectedHeroIndex = idx;
+          if (heroSelectCallback) heroSelectCallback(idx);
           renderActionButtons();
         }
       });
@@ -314,24 +331,28 @@ export function createCombatUI(): CombatUI {
       });
     });
 
-    document.getElementById('attack-btn')?.addEventListener('click', () => {
+    document.getElementById('combat-attack-btn')?.addEventListener('click', () => {
       if (actionsEnabled && attackCallback) attackCallback(selectedHeroIndex, selectedEnemyIndex);
     });
-    document.getElementById('guard-btn')?.addEventListener('click', () => {
+    document.getElementById('combat-guard-btn')?.addEventListener('click', () => {
       if (actionsEnabled && guardCallback) guardCallback(selectedHeroIndex);
     });
-    document.getElementById('skills-btn')?.addEventListener('click', () => {
-      actionMode = 'skills';
-      renderActionButtons();
+    document.getElementById('combat-skills-btn')?.addEventListener('click', () => {
+      if (actionsEnabled) {
+        actionMode = 'skills';
+        renderActionButtons();
+      }
     });
-    document.getElementById('items-btn')?.addEventListener('click', () => {
-      actionMode = 'items';
-      renderActionButtons();
+    document.getElementById('combat-items-btn')?.addEventListener('click', () => {
+      if (actionsEnabled) {
+        actionMode = 'items';
+        renderActionButtons();
+      }
     });
-    document.getElementById('end-turn-btn')?.addEventListener('click', () => {
+    document.getElementById('combat-end-turn-btn')?.addEventListener('click', () => {
       if (actionsEnabled && endTurnCallback) endTurnCallback();
     });
-    document.getElementById('back-btn')?.addEventListener('click', () => {
+    document.getElementById('combat-back-btn')?.addEventListener('click', () => {
       actionMode = 'main';
       renderActionButtons();
     });
@@ -352,10 +373,10 @@ export function createCombatUI(): CombatUI {
       });
     });
 
-    // Hover effects
-    actionButtons.querySelectorAll('.action-btn, .skill-btn, .item-btn').forEach(btn => {
+    // Hover effects for enabled buttons
+    actionButtons.querySelectorAll('.action-btn:not([disabled]), .skill-btn:not([disabled]), .item-btn:not([disabled])').forEach(btn => {
       btn.addEventListener('mouseenter', () => {
-        (btn as HTMLElement).style.opacity = '0.85';
+        (btn as HTMLElement).style.opacity = '0.8';
         (btn as HTMLElement).style.transform = 'scale(1.02)';
       });
       btn.addEventListener('mouseleave', () => {
@@ -371,8 +392,12 @@ export function createCombatUI(): CombatUI {
     show() {
       container.style.display = 'block';
       actionMode = 'main';
-      selectedHeroIndex = 0;
-      selectedEnemyIndex = 0;
+      // Auto-select first alive hero
+      const firstAliveHero = currentParty.findIndex(c => c.hp > 0);
+      selectedHeroIndex = firstAliveHero >= 0 ? firstAliveHero : 0;
+      // Auto-select first alive enemy
+      const firstAliveEnemy = currentEnemies.findIndex(e => e.hp > 0);
+      selectedEnemyIndex = firstAliveEnemy >= 0 ? firstAliveEnemy : 0;
       renderActionButtons();
     },
 
@@ -384,37 +409,60 @@ export function createCombatUI(): CombatUI {
       currentParty = party;
       if (party[selectedHeroIndex]?.hp <= 0) {
         const firstAlive = party.findIndex(c => c.hp > 0);
-        if (firstAlive >= 0) selectedHeroIndex = firstAlive;
+        if (firstAlive >= 0) {
+          selectedHeroIndex = firstAlive;
+          if (heroSelectCallback) heroSelectCallback(firstAlive);
+        }
       }
 
-      const partyList = document.getElementById('party-list');
+      const partyList = document.getElementById('combat-party-list');
       if (!partyList) return;
 
       partyList.innerHTML = party
         .map(
-          (char) => `
-          <div style="
-            padding: 6px; margin-bottom: 4px;
-            background: ${char.hp > 0 ? 'rgba(76, 175, 80, 0.2)' : 'rgba(100, 100, 100, 0.2)'};
-            border: 1px solid ${char.hp > 0 ? '#4CAF50' : '#666'};
-            border-radius: 3px;
-            ${char.hp <= 0 ? 'opacity: 0.5;' : ''}
-          ">
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-              <span style="font-weight: bold; font-size: 12px;">${char.name} Lv${char.level}${char.isGuarding ? ' [G]' : ''}${char.statuses.length > 0 ? ' ' + char.statuses.join(' ') : ''}</span>
-              <span style="font-size: 11px; color: ${char.hp > 0 ? '#4CAF50' : '#f44336'};">HP:${char.hp}/${char.maxHp}</span>
-            </div>
-            <div style="display: flex; gap: 6px; margin-top: 3px;">
-              <div style="flex: 1; background: rgba(0,0,0,0.3); height: 6px; border-radius: 3px; overflow: hidden;">
-                <div style="width: ${(char.hp / char.maxHp) * 100}%; height: 100%; background: ${char.hp > char.maxHp * 0.5 ? '#4CAF50' : char.hp > char.maxHp * 0.25 ? '#ffa500' : '#f44336'}; transition: width 0.3s;"></div>
+          (char, i) => {
+            const hpPercent = char.maxHp > 0 ? (char.hp / char.maxHp) * 100 : 0;
+            const hpColor = hpPercent > 50 ? '#4CAF50' : hpPercent > 25 ? '#ffa500' : '#f44336';
+            const isSelected = i === selectedHeroIndex;
+
+            return `
+            <div style="
+              padding: 6px 8px; margin-bottom: 4px;
+              background: ${char.hp > 0 ? (isSelected ? 'rgba(76, 175, 80, 0.25)' : 'rgba(76, 175, 80, 0.1)') : 'rgba(60, 60, 60, 0.2)'};
+              border: 1px solid ${char.hp > 0 ? (isSelected ? '#4CAF50' : 'rgba(76, 175, 80, 0.4)') : '#555'};
+              border-radius: 4px;
+              ${char.hp <= 0 ? 'opacity: 0.4;' : ''}
+            ">
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span style="font-weight: bold; font-size: 12px;">
+                  ${char.name}
+                  <span style="color: #aaa; font-weight: normal; font-size: 10px;">Lv${char.level}</span>
+                  ${char.isGuarding ? ' <span style="color: #64B5F6;">[G]</span>' : ''}
+                  ${char.statuses.length > 0 ? ' <span style="color: #ffa500; font-size: 10px;">' + char.statuses.join(' ') + '</span>' : ''}
+                </span>
+              </div>
+              <div style="display: flex; gap: 8px; margin-top: 4px; align-items: center;">
+                <div style="flex: 1;">
+                  <div style="display: flex; justify-content: space-between; margin-bottom: 2px;">
+                    <span style="font-size: 9px; color: ${hpColor};">HP</span>
+                    <span style="font-size: 9px; color: ${hpColor};">${char.hp}/${char.maxHp}</span>
+                  </div>
+                  <div style="background: rgba(0,0,0,0.4); height: 5px; border-radius: 3px; overflow: hidden;">
+                    <div style="width: ${hpPercent}%; height: 100%; background: ${hpColor}; transition: width 0.3s;"></div>
+                  </div>
+                </div>
+                <div style="flex: 1;">
+                  <div style="display: flex; justify-content: space-between; margin-bottom: 2px;">
+                    <span style="font-size: 9px; color: #64B5F6;">MP</span>
+                    <span style="font-size: 9px; color: #64B5F6;">${char.mp}/${char.maxMp}</span>
+                  </div>
+                  <div style="background: rgba(0,0,0,0.4); height: 5px; border-radius: 3px; overflow: hidden;">
+                    <div style="width: ${char.maxMp > 0 ? (char.mp / char.maxMp) * 100 : 0}%; height: 100%; background: #64B5F6; transition: width 0.3s;"></div>
+                  </div>
+                </div>
               </div>
             </div>
-            <div style="display: flex; justify-content: flex-end; margin-top: 2px;">
-              <span style="font-size: 10px; color: #64B5F6;">MP:${char.mp}/${char.maxMp}</span>
-            </div>
-          </div>
-        `
-        )
+          `})
         .join('');
 
       renderActionButtons();
@@ -427,34 +475,41 @@ export function createCombatUI(): CombatUI {
         if (firstAlive >= 0) selectedEnemyIndex = firstAlive;
       }
 
-      const enemyList = document.getElementById('enemy-list');
+      const enemyList = document.getElementById('combat-enemy-list');
       if (!enemyList) return;
 
       if (enemies.length === 0) {
-        enemyList.innerHTML = '<div style="color: #666; font-style: italic;">No enemies</div>';
+        enemyList.innerHTML = '<div style="color: #666; font-style: italic; font-size: 11px;">No enemies</div>';
         return;
       }
 
       enemyList.innerHTML = enemies
         .map(
-          (enemy) => `
-          <div style="
-            padding: 6px; margin-bottom: 4px;
-            background: ${enemy.hp > 0 ? 'rgba(244, 67, 54, 0.2)' : 'rgba(100, 100, 100, 0.2)'};
-            border: 1px solid ${enemy.hp > 0 ? '#f44336' : '#666'};
-            border-radius: 3px;
-            ${enemy.hp <= 0 ? 'opacity: 0.5;' : ''}
-          ">
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-              <span style="font-weight: bold; font-size: 12px;">${enemy.name}${enemy.isGuarding ? ' [G]' : ''}${enemy.statuses.length > 0 ? ' ' + enemy.statuses.join(' ') : ''}</span>
-              <span style="font-size: 11px; color: ${enemy.hp > 0 ? '#f44336' : '#666'};">HP:${enemy.hp}/${enemy.maxHp}</span>
+          (enemy) => {
+            const hpPercent = enemy.maxHp > 0 ? (enemy.hp / enemy.maxHp) * 100 : 0;
+            const hpColor = hpPercent > 50 ? '#f44336' : hpPercent > 25 ? '#ffa500' : '#666';
+
+            return `
+            <div style="
+              padding: 6px 8px; margin-bottom: 4px;
+              background: ${enemy.hp > 0 ? 'rgba(244, 67, 54, 0.1)' : 'rgba(60, 60, 60, 0.2)'};
+              border: 1px solid ${enemy.hp > 0 ? 'rgba(244, 67, 54, 0.4)' : '#555'};
+              border-radius: 4px;
+              ${enemy.hp <= 0 ? 'opacity: 0.4;' : ''}
+            ">
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span style="font-weight: bold; font-size: 12px;">
+                  ${enemy.name}
+                  ${enemy.isGuarding ? ' <span style="color: #64B5F6;">[G]</span>' : ''}
+                  ${enemy.statuses.length > 0 ? ' <span style="color: #ffa500; font-size: 10px;">' + enemy.statuses.join(' ') + '</span>' : ''}
+                </span>
+                <span style="font-size: 10px; color: ${enemy.hp > 0 ? hpColor : '#555'};">${enemy.hp}/${enemy.maxHp}</span>
+              </div>
+              <div style="margin-top: 3px; background: rgba(0,0,0,0.4); height: 5px; border-radius: 3px; overflow: hidden;">
+                <div style="width: ${hpPercent}%; height: 100%; background: ${hpColor}; transition: width 0.3s;"></div>
+              </div>
             </div>
-            <div style="margin-top: 3px; background: rgba(0,0,0,0.3); height: 6px; border-radius: 3px; overflow: hidden;">
-              <div style="width: ${(enemy.hp / enemy.maxHp) * 100}%; height: 100%; background: ${enemy.hp > enemy.maxHp * 0.5 ? '#f44336' : enemy.hp > enemy.maxHp * 0.25 ? '#ffa500' : '#666'}; transition: width 0.3s;"></div>
-            </div>
-          </div>
-        `
-        )
+          `})
         .join('');
 
       renderActionButtons();
@@ -472,17 +527,25 @@ export function createCombatUI(): CombatUI {
     },
 
     addLogEntry(message) {
-      const log = document.getElementById('combat-log');
+      const log = document.getElementById('combat-log-entries');
       if (!log) return;
       const entry = document.createElement('div');
-      entry.style.cssText = `padding: 1px 0; color: #ddd;`;
+      if (message === '') {
+        entry.style.cssText = `height: 6px;`;
+      } else if (message.startsWith('===')) {
+        entry.style.cssText = `padding: 2px 0; color: #ffa500; font-weight: bold; font-size: 11px;`;
+      } else if (message.startsWith('  ')) {
+        entry.style.cssText = `padding: 1px 0; color: #bbb; font-size: 10px; padding-left: 8px;`;
+      } else {
+        entry.style.cssText = `padding: 1px 0; color: #ddd; font-size: 11px;`;
+      }
       entry.textContent = message;
       log.appendChild(entry);
       log.scrollTop = log.scrollHeight;
     },
 
     clearLog() {
-      const log = document.getElementById('combat-log');
+      const log = document.getElementById('combat-log-entries');
       if (log) log.innerHTML = '';
     },
 
@@ -491,6 +554,7 @@ export function createCombatUI(): CombatUI {
     onSkill(callback) { skillCallback = callback; },
     onItem(callback) { itemCallback = callback; },
     onEndTurn(callback) { endTurnCallback = callback; },
+    onHeroSelect(callback) { heroSelectCallback = callback; },
 
     setActionsEnabled(enabled) {
       actionsEnabled = enabled;

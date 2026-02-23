@@ -159,6 +159,37 @@ export function createMainMenuScreen(): MainMenuScreen {
         from { opacity: 0; }
         to { opacity: 1; }
       }
+      /* Custom scrollbar for UI panels */
+      #dungeon-map-screen ::-webkit-scrollbar,
+      #reward-screen ::-webkit-scrollbar,
+      #combat-ui ::-webkit-scrollbar {
+        width: 6px;
+      }
+      #dungeon-map-screen ::-webkit-scrollbar-track,
+      #reward-screen ::-webkit-scrollbar-track,
+      #combat-ui ::-webkit-scrollbar-track {
+        background: rgba(0, 0, 0, 0.2);
+        border-radius: 3px;
+      }
+      #dungeon-map-screen ::-webkit-scrollbar-thumb,
+      #reward-screen ::-webkit-scrollbar-thumb,
+      #combat-ui ::-webkit-scrollbar-thumb {
+        background: rgba(76, 175, 80, 0.4);
+        border-radius: 3px;
+      }
+      #dungeon-map-screen ::-webkit-scrollbar-thumb:hover,
+      #reward-screen ::-webkit-scrollbar-thumb:hover,
+      #combat-ui ::-webkit-scrollbar-thumb:hover {
+        background: rgba(76, 175, 80, 0.6);
+      }
+      /* Remove button focus outline globally for game UI */
+      #main-menu-screen button:focus,
+      #dungeon-map-screen button:focus,
+      #reward-screen button:focus,
+      #defeat-screen button:focus,
+      #combat-ui button:focus {
+        outline: none;
+      }
     `;
     document.head.appendChild(style);
   }

@@ -64,6 +64,7 @@ export function createDungeonMapScreen(): DungeonMapScreen {
     background: linear-gradient(135deg, rgba(76, 175, 80, 0.3), rgba(30, 30, 50, 0.9));
     padding: 20px 24px;
     border-bottom: 2px solid #4CAF50;
+    border-radius: 8px 8px 0 0;
     text-align: center;
   `;
 

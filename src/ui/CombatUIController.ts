@@ -26,6 +26,7 @@ export class CombatUIController {
   private renderer?: CombatRenderer;
   private onCombatEndCallback?: (victor: 'party' | 'enemy') => void;
   private hasCombatEnded: boolean = false;
+  private selectedHeroIndex: number = 0;
 
   constructor(
     combat: CombatEngine,
@@ -46,11 +47,21 @@ export class CombatUIController {
     this.renderer = renderer;
     this.onCombatEndCallback = onCombatEnd;
 
+    // Initialize selected hero to first alive
+    const firstAlive = party.findIndex(c => c.hp > 0);
+    this.selectedHeroIndex = firstAlive >= 0 ? firstAlive : 0;
+
     this.setupEventHandlers();
     this.refresh();
   }
 
   private setupEventHandlers() {
+    // Track hero selection changes to update skills/items display
+    this.ui.onHeroSelect((heroIndex) => {
+      this.selectedHeroIndex = heroIndex;
+      this.refreshSkillsAndItems();
+    });
+
     this.ui.onAttack((heroIndex, targetEnemyIndex) => {
       const hero = this.party[heroIndex];
       const target = this.enemies[targetEnemyIndex];
@@ -107,6 +118,7 @@ export class CombatUIController {
       if (skill.targeting === 'single_enemy') {
         targetId = this.enemies[targetIndex]?.id;
       } else if (skill.targeting === 'single_ally') {
+        // Target the selected hero (self-heal or ally-buff)
         targetId = this.party[heroIndex]?.id;
       } else if (skill.targeting === 'self') {
         targetId = hero.id;
@@ -238,8 +250,6 @@ export class CombatUIController {
   }
 
   private refresh() {
-    const selectedHero = this.party.find(c => c.hp > 0) ?? this.party[0];
-
     this.ui.updateParty(
       this.party.map(char => ({
         name: char.name,
@@ -264,30 +274,7 @@ export class CombatUIController {
       }))
     );
 
-    if (selectedHero && selectedHero.hp > 0) {
-      const skills = selectedHero.skillIds
-        .map(id => this.content.skills.get(id))
-        .filter((s): s is NonNullable<typeof s> => !!s)
-        .map(s => ({
-          id: s.id,
-          name: s.name,
-          mpCost: s.mpCost,
-          description: s.description,
-        }));
-      this.ui.updateSkills(skills, selectedHero.mp);
-
-      const items = selectedHero.inventory
-        .filter(e => e.quantity > 0)
-        .map(e => {
-          const template = this.content.items.get(e.itemId);
-          return {
-            itemId: e.itemId,
-            name: template?.name ?? e.itemId,
-            quantity: e.quantity,
-          };
-        });
-      this.ui.updateItems(items);
-    }
+    this.refreshSkillsAndItems();
 
     if (this.renderer) {
       this.party.forEach(char => {
@@ -302,6 +289,36 @@ export class CombatUIController {
     const lastMessages = messages.slice(Math.max(0, messages.length - 30));
     this.ui.clearLog();
     lastMessages.forEach(msg => this.ui.addLogEntry(msg));
+  }
+
+  private refreshSkillsAndItems() {
+    // Use the selected hero for skills/items display (not always first alive)
+    const selectedHero = this.party[this.selectedHeroIndex];
+    const hero = (selectedHero && selectedHero.hp > 0) ? selectedHero : this.party.find(c => c.hp > 0);
+    if (!hero) return;
+
+    const skills = hero.skillIds
+      .map(id => this.content.skills.get(id))
+      .filter((s): s is NonNullable<typeof s> => !!s)
+      .map(s => ({
+        id: s.id,
+        name: s.name,
+        mpCost: s.mpCost,
+        description: s.description,
+      }));
+    this.ui.updateSkills(skills, hero.mp);
+
+    const items = hero.inventory
+      .filter(e => e.quantity > 0)
+      .map(e => {
+        const template = this.content.items.get(e.itemId);
+        return {
+          itemId: e.itemId,
+          name: template?.name ?? e.itemId,
+          quantity: e.quantity,
+        };
+      });
+    this.ui.updateItems(items);
   }
 
   private checkCombatEnd() {

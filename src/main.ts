@@ -13,8 +13,9 @@ window.addEventListener('DOMContentLoaded', () => {
   const loadingDiv = document.getElementById('loading');
   if (loadingDiv) {
     setTimeout(() => {
-      loadingDiv.style.display = 'none';
-    }, 1000);
+      loadingDiv.classList.add('fade-out');
+      setTimeout(() => loadingDiv.remove(), 600);
+    }, 800);
   }
 
   const canvas = document.getElementById('renderCanvas') as HTMLCanvasElement;

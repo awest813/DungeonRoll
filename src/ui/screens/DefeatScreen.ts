@@ -39,6 +39,7 @@ export function createDefeatScreen(): DefeatScreen {
     background: linear-gradient(135deg, rgba(244, 67, 54, 0.3), rgba(30, 10, 10, 0.9));
     padding: 30px;
     border-bottom: 2px solid #f44336;
+    border-radius: 8px 8px 0 0;
   `;
   header.innerHTML = `
     <div style="font-size: 42px; font-weight: bold; color: #f44336; text-shadow: 0 0 20px rgba(244, 67, 54, 0.5); letter-spacing: 6px;">
@@ -79,20 +80,23 @@ export function createDefeatScreen(): DefeatScreen {
 
   let returnCallback: (() => void) | null = null;
 
-  const returnBtn = document.getElementById('return-title-btn')!;
-  returnBtn.addEventListener('mouseenter', () => {
-    returnBtn.style.background = 'rgba(244, 67, 54, 0.3)';
-    returnBtn.style.transform = 'scale(1.03)';
-    returnBtn.style.boxShadow = '0 0 20px rgba(244, 67, 54, 0.3)';
-  });
-  returnBtn.addEventListener('mouseleave', () => {
-    returnBtn.style.background = 'rgba(244, 67, 54, 0.15)';
-    returnBtn.style.transform = 'scale(1)';
-    returnBtn.style.boxShadow = 'none';
-  });
-  returnBtn.addEventListener('click', () => {
-    if (returnCallback) returnCallback();
-  });
+  // Query inside the container to avoid global ID collisions
+  const returnBtn = container.querySelector('#return-title-btn') as HTMLButtonElement;
+  if (returnBtn) {
+    returnBtn.addEventListener('mouseenter', () => {
+      returnBtn.style.background = 'rgba(244, 67, 54, 0.3)';
+      returnBtn.style.transform = 'scale(1.03)';
+      returnBtn.style.boxShadow = '0 0 20px rgba(244, 67, 54, 0.3)';
+    });
+    returnBtn.addEventListener('mouseleave', () => {
+      returnBtn.style.background = 'rgba(244, 67, 54, 0.15)';
+      returnBtn.style.transform = 'scale(1)';
+      returnBtn.style.boxShadow = 'none';
+    });
+    returnBtn.addEventListener('click', () => {
+      if (returnCallback) returnCallback();
+    });
+  }
 
   return {
     show() {
