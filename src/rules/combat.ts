@@ -32,11 +32,12 @@ export class CombatEngine {
   }
 
   private calculateTurnOrder(party: Character[], enemies: Enemy[]): string[] {
-    const all: { id: string; speed: number }[] = [
-      ...party.map(c => ({ id: c.id, speed: c.speed })),
-      ...enemies.map(e => ({ id: e.id, speed: e.speed })),
+    const all: { id: string; speed: number; index: number }[] = [
+      ...party.map((c, i) => ({ id: c.id, speed: c.speed, index: i })),
+      ...enemies.map((e, i) => ({ id: e.id, speed: e.speed, index: party.length + i })),
     ];
-    all.sort((a, b) => b.speed - a.speed);
+    // Sort by speed descending, then by original index ascending for deterministic tiebreak
+    all.sort((a, b) => b.speed - a.speed || a.index - b.index);
     return all.map(c => c.id);
   }
 

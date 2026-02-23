@@ -117,6 +117,8 @@ export class CombatRenderer {
   private unitMeshes: Map<string, UnitMesh> = new Map();
   private idleBobObserver: BABYLON.Nullable<BABYLON.Observer<BABYLON.Scene>> = null;
   private bobTime: number = 0;
+  private disposed: boolean = false;
+  private activeTimers: Set<number> = new Set();
 
   constructor(scene: BABYLON.Scene) {
     this.scene = scene;
@@ -554,11 +556,44 @@ export class CombatRenderer {
     }
   }
 
+  // --- Timer management ---
+
+  private safeSetInterval(fn: () => void, ms: number): number {
+    const id = window.setInterval(() => {
+      if (this.disposed) { clearInterval(id); this.activeTimers.delete(id); return; }
+      fn();
+    }, ms);
+    this.activeTimers.add(id);
+    return id;
+  }
+
+  private safeClearInterval(id: number): void {
+    clearInterval(id);
+    this.activeTimers.delete(id);
+  }
+
+  private safeSetTimeout(fn: () => void, ms: number): number {
+    const id = window.setTimeout(() => {
+      this.activeTimers.delete(id);
+      if (!this.disposed) fn();
+    }, ms);
+    this.activeTimers.add(id);
+    return id;
+  }
+
+  private clearAllTimers(): void {
+    this.activeTimers.forEach(id => {
+      clearInterval(id);
+      clearTimeout(id);
+    });
+    this.activeTimers.clear();
+  }
+
   // --- Animations ---
 
   playHitAnimation(id: string): void {
     const unitMesh = this.unitMeshes.get(id);
-    if (!unitMesh) return;
+    if (!unitMesh || this.disposed) return;
 
     // Shake
     const originalPos = unitMesh.mesh.position.clone();
@@ -567,11 +602,13 @@ export class CombatRenderer {
     const stepDuration = 50;
 
     let step = 0;
-    const shakeInterval = setInterval(() => {
-      if (step >= shakeSteps) {
-        unitMesh.mesh.position.x = originalPos.x;
-        unitMesh.mesh.position.z = originalPos.z;
-        clearInterval(shakeInterval);
+    const shakeInterval = this.safeSetInterval(() => {
+      if (step >= shakeSteps || this.disposed) {
+        if (!this.disposed) {
+          unitMesh.mesh.position.x = originalPos.x;
+          unitMesh.mesh.position.z = originalPos.z;
+        }
+        this.safeClearInterval(shakeInterval);
         return;
       }
       const ox = (Math.random() - 0.5) * shakeIntensity;
@@ -591,7 +628,7 @@ export class CombatRenderer {
       if (mat) {
         const origEmissive = mat.emissiveColor.clone();
         mat.emissiveColor = new BABYLON.Color3(0.6, 0.1, 0.05);
-        setTimeout(() => {
+        this.safeSetTimeout(() => {
           mat.emissiveColor = origEmissive;
         }, 200);
       }
@@ -600,7 +637,7 @@ export class CombatRenderer {
 
   private playDeathAnimation(id: string): void {
     const unitMesh = this.unitMeshes.get(id);
-    if (!unitMesh) return;
+    if (!unitMesh || this.disposed) return;
 
     unitMesh.alive = false;
 
@@ -611,6 +648,7 @@ export class CombatRenderer {
     let frame = 0;
 
     const animate = () => {
+      if (this.disposed) return;
       if (frame >= duration) {
         unitMesh.mesh.setEnabled(false);
         return;
@@ -620,10 +658,8 @@ export class CombatRenderer {
       const scale = 1.0 - progress * 0.6;
       const alpha = 1.0 - progress;
 
-      // Scale all parts through root
       unitMesh.mesh.scaling = new BABYLON.Vector3(scale, scale, scale);
 
-      // Fade all materials
       const fadeParts = [...unitMesh.bodyParts, unitMesh.nameLabel, unitMesh.hpBar, unitMesh.hpBarBackground];
       fadeParts.forEach(part => {
         const mat = part.material as BABYLON.StandardMaterial;
@@ -686,15 +722,15 @@ export class CombatRenderer {
     const returnDuration = 18;
     let frame = 0;
 
-    // Tilt forward during lunge
     const attackerBaseY = attackerMesh.baseY;
 
     const animate = () => {
+      if (this.disposed) return;
+
       if (frame < lungeDuration) {
         const progress = frame / lungeDuration;
         const eased = this.easeOutQuad(progress);
         attackerMesh.mesh.position = BABYLON.Vector3.Lerp(startPos, lungePos, eased);
-        // Lean forward
         attackerMesh.mesh.rotation.x = eased * 0.15;
         frame++;
         requestAnimationFrame(animate);
@@ -778,6 +814,11 @@ export class CombatRenderer {
   }
 
   clear(): void {
+    this.disposed = true;
+
+    // Cancel all pending timers
+    this.clearAllTimers();
+
     // Stop idle bob
     if (this.idleBobObserver) {
       this.scene.onBeforeRenderObservable.remove(this.idleBobObserver);
@@ -785,7 +826,6 @@ export class CombatRenderer {
     }
 
     this.unitMeshes.forEach(unitMesh => {
-      // Dispose all body parts
       unitMesh.bodyParts.forEach(part => part.dispose());
       unitMesh.nameLabel.dispose();
       unitMesh.hpBar.dispose();

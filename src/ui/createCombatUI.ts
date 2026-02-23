@@ -187,6 +187,7 @@ export function createCombatUI(): CombatUI {
   let currentEnemies: CombatUIEnemy[] = [];
   let currentMp = 0;
   let actionMode: 'main' | 'skills' | 'items' = 'main';
+  let selectedItemTargetIndex = 0;
 
   function actionBtnStyle(color: string, disabled: boolean): string {
     return `
@@ -286,6 +287,19 @@ export function createCombatUI(): CombatUI {
         ${skillButtons}
       `;
     } else if (actionMode === 'items') {
+      // Items target party members - show party target selector
+      const itemTargetSelector = currentParty.length > 0
+        ? `<div style="margin-bottom: 8px;">
+            <div style="font-size: 10px; color: #999; margin-bottom: 4px; letter-spacing: 1px;">USE ON:</div>
+            ${currentParty
+              .map(
+                (char, index) => `
+                <button class="item-target-select" data-index="${index}" style="${selectBtnStyle(selectedItemTargetIndex === index, '#E65100', char.hp <= 0)}">${char.name}</button>`
+              )
+              .join('')}
+          </div>`
+        : '';
+
       const itemButtons = currentItems.filter(i => i.quantity > 0).map(item => `
         <button class="item-btn" data-item-id="${item.itemId}" style="
           width: 100%; padding: 8px; margin-bottom: 4px;
@@ -305,6 +319,7 @@ export function createCombatUI(): CombatUI {
         <div style="margin-bottom: 8px;">
           <button id="combat-back-btn" style="${actionBtnStyle('#37474F', false)}">BACK</button>
         </div>
+        ${itemTargetSelector}
         ${itemButtons.length > 0 ? itemButtons : '<div style="color: #666; font-size: 11px; padding: 4px;">No items available</div>'}
       `;
     }
@@ -346,6 +361,7 @@ export function createCombatUI(): CombatUI {
     document.getElementById('combat-items-btn')?.addEventListener('click', () => {
       if (actionsEnabled) {
         actionMode = 'items';
+        selectedItemTargetIndex = selectedHeroIndex; // default target = self
         renderActionButtons();
       }
     });
@@ -365,11 +381,21 @@ export function createCombatUI(): CombatUI {
       });
     });
 
+    actionButtons.querySelectorAll('.item-target-select').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const idx = parseInt((btn as HTMLElement).dataset.index!, 10);
+        if (currentParty[idx]) {
+          selectedItemTargetIndex = idx;
+          renderActionButtons();
+        }
+      });
+    });
+
     actionButtons.querySelectorAll('.item-btn').forEach(btn => {
       btn.addEventListener('click', () => {
         if (!actionsEnabled) return;
         const itemId = (btn as HTMLElement).dataset.itemId!;
-        if (itemCallback) itemCallback(selectedHeroIndex, itemId, selectedHeroIndex);
+        if (itemCallback) itemCallback(selectedHeroIndex, itemId, selectedItemTargetIndex);
       });
     });
 

@@ -231,10 +231,6 @@ export class GameSession {
       this.combatUI = createCombatUI();
     }
 
-    if (this.combatRenderer) {
-      this.combatRenderer.clear();
-    }
-
     const combatRenderer = new CombatRenderer(this.scene);
     this.combatRenderer = combatRenderer;
     combatRenderer.createPartyMeshes(party);
@@ -297,6 +293,13 @@ export class GameSession {
         roomName: room.name,
       };
 
+      // Clear combat-only status effects (poison, buffs, debuffs) between encounters
+      // Keep HP/MP as-is (persistent damage between rooms)
+      for (const char of party) {
+        char.statuses = [];
+        char.isGuarding = false;
+      }
+
       // Advance to next encounter/room
       this.currentEncounterIndex++;
       if (this.currentEncounterIndex >= room.encounters.length) {
@@ -324,6 +327,10 @@ export class GameSession {
   private hideCombat(): void {
     if (this.combatController) {
       this.combatController.hide();
+    }
+    if (this.combatRenderer) {
+      this.combatRenderer.clear();
+      this.combatRenderer = undefined;
     }
   }
 }
