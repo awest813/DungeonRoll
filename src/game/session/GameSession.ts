@@ -313,6 +313,14 @@ export class GameSession {
 
     const dungeonComplete = roomCleared && nextRoomChoices.length === 0 && this.visitedRoomIds.length > 0;
 
+    // Build room connection graph for minimap
+    const roomConnections: { from: string; to: string }[] = [];
+    for (const [, r] of this.content.rooms) {
+      for (const nextId of r.nextRooms) {
+        roomConnections.push({ from: r.id, to: nextId });
+      }
+    }
+
     // Collect party equipment info and available pool
     const partyEquipment = party.map(c => {
       const equipped: Record<string, { id: string; name: string; rarity: string }> = {};
@@ -346,6 +354,7 @@ export class GameSession {
       rooms: this.getAllRoomInfos(),
       currentRoomId: this.currentRoomId,
       visitedRoomIds: this.visitedRoomIds,
+      roomConnections,
       encounterIndex: roomCleared ? 0 : this.currentEncounterIndex,
       totalEncounters: room?.encounters.length ?? 1,
       party: party.map(c => ({

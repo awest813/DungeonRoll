@@ -23,6 +23,7 @@ export interface DungeonMapData {
   rooms: DungeonRoomInfo[];
   currentRoomId: string;
   visitedRoomIds: string[];
+  roomConnections: { from: string; to: string }[];
   party: DungeonPartyMember[];
   encounterPreview: string[];
   encounterTotalHp: number;
@@ -60,6 +61,153 @@ const RARITY_COLORS: Record<string, string> = {
   uncommon: '#4CAF50',
   rare: '#FFD54F',
 };
+
+function buildMinimap(
+  rooms: DungeonRoomInfo[],
+  connections: { from: string; to: string }[],
+  visitedIds: string[],
+  currentId: string,
+  nextIds: string[],
+): string {
+  if (rooms.length === 0) return '';
+
+  // Find root (no incoming connections)
+  const targetIds = new Set(connections.map(c => c.to));
+  const rootId = rooms.find(r => !targetIds.has(r.id))?.id ?? rooms[0].id;
+
+  // BFS to assign depths
+  const depth = new Map<string, number>();
+  const queue = [rootId];
+  depth.set(rootId, 0);
+  while (queue.length > 0) {
+    const id = queue.shift()!;
+    const d = depth.get(id)!;
+    for (const c of connections) {
+      if (c.from === id && !depth.has(c.to)) {
+        depth.set(c.to, d + 1);
+        queue.push(c.to);
+      }
+    }
+  }
+  // Any rooms not reached get depth maxDepth+1 (disconnected)
+  const reachableMax = depth.size > 0 ? Math.max(...depth.values()) : 0;
+  for (const r of rooms) {
+    if (!depth.has(r.id)) depth.set(r.id, reachableMax + 1);
+  }
+
+  const byDepth = new Map<number, string[]>();
+  for (const [id, d] of depth) {
+    if (!byDepth.has(d)) byDepth.set(d, []);
+    byDepth.get(d)!.push(id);
+  }
+
+  const maxDepth = Math.max(...depth.values());
+  const numLevels = maxDepth + 1;
+  const maxPerLevel = Math.max(...Array.from(byDepth.values()).map(v => v.length));
+
+  const svgW = 640;
+  const nodeR = 12;
+  const xPad = 30;
+  const yPad = 24;
+  const xStep = numLevels <= 1 ? 0 : (svgW - xPad * 2) / (numLevels - 1);
+  const rowH = 48;
+  const svgH = Math.max(80, maxPerLevel * rowH + yPad * 2);
+  const yCenter = svgH / 2;
+
+  const pos = new Map<string, { x: number; y: number }>();
+  for (const [d, ids] of byDepth) {
+    const x = xPad + d * xStep;
+    ids.forEach((id, i) => {
+      const totalSpan = (ids.length - 1) * rowH;
+      const y = ids.length === 1 ? yCenter : yCenter - totalSpan / 2 + i * rowH;
+      pos.set(id, { x, y });
+    });
+  }
+
+  const visitedSet = new Set(visitedIds);
+  const nextSet = new Set(nextIds);
+
+  function vis(id: string): 'current' | 'visited' | 'next' | 'hidden' {
+    if (id === currentId) return 'current';
+    if (visitedSet.has(id)) return 'visited';
+    if (nextSet.has(id)) return 'next';
+    return 'hidden';
+  }
+
+  function abbrev(id: string): string {
+    const room = rooms.find(r => r.id === id);
+    if (!room) return '???';
+    return room.name.split(/[\s-]/)[0].substring(0, 3).toUpperCase();
+  }
+
+  // Edges
+  const edgeSvg = connections.map(c => {
+    const from = pos.get(c.from);
+    const to = pos.get(c.to);
+    if (!from || !to) return '';
+    const vF = vis(c.from);
+    const vT = vis(c.to);
+    let stroke = '#1e1e2e';
+    let opacity = '0.35';
+    let extra = '';
+    if ((vF === 'visited' || vF === 'current') && (vT === 'visited' || vT === 'current')) {
+      stroke = '#4CAF50'; opacity = '0.5';
+    } else if ((vF === 'visited' || vF === 'current') && vT === 'next') {
+      stroke = '#ffa500'; opacity = '0.45'; extra = 'stroke-dasharray="4 3"';
+    } else if (vF === 'next' || vT === 'next' || vF === 'visited' || vT === 'visited') {
+      stroke = '#555'; opacity = '0.3';
+    }
+    const fx = from.x.toFixed(1); const fy = from.y.toFixed(1);
+    const tx = to.x.toFixed(1); const ty = to.y.toFixed(1);
+    return `<line x1="${fx}" y1="${fy}" x2="${tx}" y2="${ty}" stroke="${stroke}" stroke-width="1.5" opacity="${opacity}" ${extra}/>`;
+  }).join('');
+
+  // Nodes
+  const nodeSvg = Array.from(pos.entries()).map(([id, p]) => {
+    const v = vis(id);
+    let fill: string, stroke: string, sw: string, textFill: string, opacity: string, r: number;
+    switch (v) {
+      case 'current':
+        fill = '#ffa500'; stroke = '#ffd060'; sw = '2.5'; textFill = '#1a0e00'; opacity = '1'; r = nodeR + 3; break;
+      case 'visited':
+        fill = '#1a3a1a'; stroke = '#4CAF50'; sw = '1.5'; textFill = '#66BB6A'; opacity = '1'; r = nodeR; break;
+      case 'next':
+        fill = '#1a1200'; stroke = '#886600'; sw = '1.5'; textFill = '#997722'; opacity = '1'; r = nodeR; break;
+      default:
+        fill = '#0e0e18'; stroke = '#252535'; sw = '1'; textFill = '#333344'; opacity = '0.5'; r = nodeR;
+    }
+    const label = v === 'hidden' ? '???' : abbrev(id);
+    const cx = p.x.toFixed(1); const cy = p.y.toFixed(1);
+    const ty = (p.y + 2.5).toFixed(1);
+    return `<g opacity="${opacity}"><circle cx="${cx}" cy="${cy}" r="${r}" fill="${fill}" stroke="${stroke}" stroke-width="${sw}"/><text x="${cx}" y="${ty}" text-anchor="middle" dominant-baseline="middle" font-size="7" font-family="Courier New,monospace" font-weight="bold" fill="${textFill}">${label}</text></g>`;
+  }).join('');
+
+  const legend = [
+    { color: '#ffa500', border: '', label: 'CURRENT' },
+    { color: '#1a3a1a', border: '1px solid #4CAF50', label: 'CLEARED' },
+    { color: '#1a1200', border: '1px solid #886600', label: 'AVAILABLE' },
+    { color: '#0e0e18', border: '1px solid #252535', label: 'UNKNOWN' },
+  ].map(({ color, border, label }) =>
+    `<span style="display:inline-flex;align-items:center;gap:4px;">` +
+    `<span style="width:8px;height:8px;border-radius:50%;background:${color};${border ? `border:${border};` : ''}display:inline-block;"></span>` +
+    `<span style="color:#666;font-size:9px;">${label}</span></span>`
+  ).join('');
+
+  return `
+    <div style="margin-bottom: 20px;">
+      <div style="font-size: 12px; color: #aaa; letter-spacing: 2px; margin-bottom: 8px;">DUNGEON MAP</div>
+      <div style="background: rgba(0,0,0,0.35); border: 1px solid #222232; border-radius: 6px; padding: 8px 6px 6px;">
+        <svg width="${svgW}" height="${svgH}" xmlns="http://www.w3.org/2000/svg" style="display:block;width:100%;height:auto;">
+          ${edgeSvg}
+          ${nodeSvg}
+        </svg>
+        <div style="display:flex;gap:14px;justify-content:center;margin-top:6px;font-family:'Courier New',monospace;flex-wrap:wrap;">
+          ${legend}
+        </div>
+      </div>
+    </div>
+  `;
+}
 
 export function createDungeonMapScreen(): DungeonMapScreen {
   const container = document.createElement('div');
@@ -451,7 +599,16 @@ export function createDungeonMapScreen(): DungeonMapScreen {
       `;
     }
 
+    const minimap = buildMinimap(
+      data.rooms,
+      data.roomConnections,
+      data.visitedRoomIds,
+      data.currentRoomId,
+      data.nextRoomChoices.map(c => c.id),
+    );
+
     contentArea.innerHTML = `
+      ${minimap}
       ${progressBar}
       <div style="font-size: 12px; color: #aaa; letter-spacing: 2px; margin-bottom: 8px;">JOURNEY</div>
       <div style="margin-bottom: 20px;">${roomList}</div>
