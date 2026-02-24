@@ -16,6 +16,21 @@ const STATUS_LABELS: Record<string, string> = {
   regenerating: '[RGN]',
 };
 
+function getSkillEffectType(skillId: string): string {
+  const id = skillId.toLowerCase();
+  if (id.includes('fire') || id.includes('flame')) return 'fire';
+  if (id.includes('ice') || id.includes('frost') || id.includes('blizzard')) return 'ice';
+  if (id.includes('lightning') || id.includes('thunder') || id.includes('storm')) return 'ice';
+  if (id.includes('heal') || id.includes('regenerat')) return 'heal';
+  if (id.includes('poison') || id.includes('venom')) return 'poison';
+  if (id.includes('holy') || id.includes('light') || id.includes('smite')) return 'holy';
+  if (id.includes('buff') || id.includes('war-cry') || id.includes('shield-of-faith')) return 'buff';
+  if (id.includes('weaken') || id.includes('curse')) return 'poison';
+  if (id.includes('backstab') || id.includes('power-strike') || id.includes('cleave') || id.includes('shield-bash')) return 'fire';
+  if (id.includes('aimed') || id.includes('volley')) return 'lightning';
+  return 'magic';
+}
+
 export class CombatUIController {
   private combat: CombatEngine;
   private log: CombatLog;
@@ -125,47 +140,57 @@ export class CombatUIController {
       if (skill.targeting === 'single_enemy') {
         targetId = this.enemies[targetIndex]?.id;
       } else if (skill.targeting === 'single_ally') {
-        // Use the selected ally target (passed as targetIndex when isAlly=true)
         const allyTarget = this.party[targetIndex];
         targetId = (allyTarget && allyTarget.hp > 0) ? allyTarget.id : hero.id;
       } else if (skill.targeting === 'self') {
         targetId = hero.id;
       }
 
-      // Snapshot HP before skill
-      const enemyHpBefore = new Map(this.enemies.map(e => [e.id, e.hp]));
-      const partyHpBefore = new Map(this.party.map(c => [c.id, c.hp]));
+      const effectType = getSkillEffectType(skillId);
 
-      this.combat.executeAction({
-        type: 'skill',
-        actorId: hero.id,
-        skillId,
-        targetId,
-      });
+      const executeSkill = () => {
+        // Snapshot HP before skill
+        const enemyHpBefore = new Map(this.enemies.map(e => [e.id, e.hp]));
+        const partyHpBefore = new Map(this.party.map(c => [c.id, c.hp]));
 
+        this.combat.executeAction({
+          type: 'skill',
+          actorId: hero.id,
+          skillId,
+          targetId,
+        });
+
+        if (this.renderer) {
+          this.enemies.forEach(e => {
+            this.renderer!.updateUnitHP(e.id, e.hp, e.maxHp);
+            const before = enemyHpBefore.get(e.id) ?? e.hp;
+            const diff = before - e.hp;
+            if (diff > 0) {
+              this.renderer!.playHitAnimation(e.id);
+              this.renderer!.showDamageNumber(e.id, diff, 'damage');
+            }
+          });
+          this.party.forEach(c => {
+            this.renderer!.updateUnitHP(c.id, c.hp, c.maxHp);
+            const before = partyHpBefore.get(c.id) ?? c.hp;
+            const diff = c.hp - before;
+            if (diff > 0) {
+              this.renderer!.showDamageNumber(c.id, diff, 'heal');
+            } else if (diff < 0) {
+              this.renderer!.showDamageNumber(c.id, -diff, 'damage');
+            }
+          });
+        }
+        this.refresh();
+        this.checkCombatEnd();
+      };
+
+      // Play casting animation with particles, then resolve skill
       if (this.renderer) {
-        this.enemies.forEach(e => {
-          this.renderer!.updateUnitHP(e.id, e.hp, e.maxHp);
-          const before = enemyHpBefore.get(e.id) ?? e.hp;
-          const diff = before - e.hp;
-          if (diff > 0) {
-            this.renderer!.playHitAnimation(e.id);
-            this.renderer!.showDamageNumber(e.id, diff, 'damage');
-          }
-        });
-        this.party.forEach(c => {
-          this.renderer!.updateUnitHP(c.id, c.hp, c.maxHp);
-          const before = partyHpBefore.get(c.id) ?? c.hp;
-          const diff = c.hp - before;
-          if (diff > 0) {
-            this.renderer!.showDamageNumber(c.id, diff, 'heal');
-          } else if (diff < 0) {
-            this.renderer!.showDamageNumber(c.id, -diff, 'damage');
-          }
-        });
+        this.renderer.playSkillAnimation(hero.id, targetId, effectType, executeSkill);
+      } else {
+        executeSkill();
       }
-      this.refresh();
-      this.checkCombatEnd();
     });
 
     this.ui.onItem((heroIndex, itemId, targetIndex) => {
@@ -255,26 +280,34 @@ export class CombatUIController {
 
       if (availableSkills.length > 0 && Math.random() < 0.4) {
         const skill = availableSkills[Math.floor(Math.random() * availableSkills.length)]!;
-        const partyHpSnapshot = new Map(this.party.map(c => [c.id, c.hp]));
-        this.combat.executeAction({
-          type: 'skill',
-          actorId: enemy.id,
-          skillId: skill.id,
-          targetId: target.id,
-        });
-        if (this.renderer) {
-          this.party.forEach(c => {
-            this.renderer!.updateUnitHP(c.id, c.hp, c.maxHp);
-            const before = partyHpSnapshot.get(c.id) ?? c.hp;
-            const diff = before - c.hp;
-            if (diff > 0) {
-              this.renderer!.playHitAnimation(c.id);
-              this.renderer!.showDamageNumber(c.id, diff, 'damage');
-            }
+        const effectType = getSkillEffectType(skill.id);
+        const resolveEnemySkill = () => {
+          const partyHpSnapshot = new Map(this.party.map(c => [c.id, c.hp]));
+          this.combat.executeAction({
+            type: 'skill',
+            actorId: enemy.id,
+            skillId: skill.id,
+            targetId: target.id,
           });
+          if (this.renderer) {
+            this.party.forEach(c => {
+              this.renderer!.updateUnitHP(c.id, c.hp, c.maxHp);
+              const before = partyHpSnapshot.get(c.id) ?? c.hp;
+              const diff = before - c.hp;
+              if (diff > 0) {
+                this.renderer!.playHitAnimation(c.id);
+                this.renderer!.showDamageNumber(c.id, diff, 'damage');
+              }
+            });
+          }
+          this.refresh();
+          setTimeout(processNextEnemy, 300);
+        };
+        if (this.renderer) {
+          this.renderer.playSkillAnimation(enemy.id, target.id, effectType, resolveEnemySkill);
+        } else {
+          resolveEnemySkill();
         }
-        this.refresh();
-        setTimeout(processNextEnemy, 600);
       } else {
         if (this.renderer) {
           this.renderer.playAttackAnimation(enemy.id, target.id, () => {

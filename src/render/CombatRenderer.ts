@@ -298,6 +298,7 @@ export class CombatRenderer {
       const staffMat = new BABYLON.StandardMaterial(`staffMat_${id}`, this.scene);
       staffMat.diffuseColor = new BABYLON.Color3(0.35, 0.2, 0.1);
       staff.material = staffMat;
+      if (shadowGenerator) shadowGenerator.addShadowCaster(staff);
       bodyParts.push(staff);
 
       // Staff orb
@@ -312,6 +313,7 @@ export class CombatRenderer {
       orbMat.diffuseColor = visual.accentColor;
       orbMat.emissiveColor = visual.accentColor.scale(0.6);
       orb.material = orbMat;
+      if (shadowGenerator) shadowGenerator.addShadowCaster(orb);
       bodyParts.push(orb);
     }
 
@@ -328,6 +330,7 @@ export class CombatRenderer {
       const bowMat = new BABYLON.StandardMaterial(`bowMat_${id}`, this.scene);
       bowMat.diffuseColor = visual.accentColor;
       bow.material = bowMat;
+      if (shadowGenerator) shadowGenerator.addShadowCaster(bow);
       bodyParts.push(bow);
     }
 
@@ -360,6 +363,7 @@ export class CombatRenderer {
         daggerMat.diffuseColor = new BABYLON.Color3(0.6, 0.6, 0.65);
         daggerMat.specularColor = new BABYLON.Color3(0.3, 0.3, 0.35);
         dagger.material = daggerMat;
+        if (shadowGenerator) shadowGenerator.addShadowCaster(dagger);
         bodyParts.push(dagger);
       });
     }
@@ -601,12 +605,14 @@ export class CombatRenderer {
     const shakeSteps = 6;
     const stepDuration = 50;
 
+    const originalScale = unitMesh.mesh.scaling.clone();
     let step = 0;
     const shakeInterval = this.safeSetInterval(() => {
       if (step >= shakeSteps || this.disposed) {
         if (!this.disposed) {
           unitMesh.mesh.position.x = originalPos.x;
           unitMesh.mesh.position.z = originalPos.z;
+          unitMesh.mesh.scaling = originalScale.clone();
         }
         this.safeClearInterval(shakeInterval);
         return;
@@ -615,6 +621,15 @@ export class CombatRenderer {
       const oz = (Math.random() - 0.5) * shakeIntensity;
       unitMesh.mesh.position.x = originalPos.x + ox;
       unitMesh.mesh.position.z = originalPos.z + oz;
+      // Scale pulse — compress then bounce
+      const pulseProgress = step / shakeSteps;
+      const squash = 1.0 - (1.0 - pulseProgress) * 0.12;
+      const stretch = 1.0 + (1.0 - pulseProgress) * 0.08;
+      unitMesh.mesh.scaling = new BABYLON.Vector3(
+        originalScale.x * stretch,
+        originalScale.y * squash,
+        originalScale.z * stretch
+      );
       step++;
     }, stepDuration);
 
@@ -641,10 +656,17 @@ export class CombatRenderer {
 
     unitMesh.alive = false;
 
-    // Death poof particles
+    // Red flash on body before death
+    const bodyPart = unitMesh.bodyParts.find(p => p.name.startsWith('body_'));
+    if (bodyPart) {
+      const mat = bodyPart.material as BABYLON.StandardMaterial;
+      if (mat) mat.emissiveColor = new BABYLON.Color3(0.5, 0.08, 0.02);
+    }
+
+    // Larger death poof particles
     this.spawnDeathPoof(unitMesh.mesh.position.clone().add(new BABYLON.Vector3(0, 0.6, 0)));
 
-    const duration = 45;
+    const duration = 50;
     let frame = 0;
 
     const animate = () => {
@@ -658,7 +680,11 @@ export class CombatRenderer {
       const scale = 1.0 - progress * 0.6;
       const alpha = 1.0 - progress;
 
-      unitMesh.mesh.scaling = new BABYLON.Vector3(scale, scale, scale);
+      unitMesh.mesh.scaling = new BABYLON.Vector3(scale, scale * (1 - progress * 0.3), scale);
+      // Tilt forward as unit collapses
+      unitMesh.mesh.rotation.x = progress * 0.4;
+      // Slight sideways lean
+      unitMesh.mesh.rotation.z = progress * 0.15;
 
       const fadeParts = [...unitMesh.bodyParts, unitMesh.nameLabel, unitMesh.hpBar, unitMesh.hpBarBackground];
       fadeParts.forEach(part => {
@@ -786,6 +812,181 @@ export class CombatRenderer {
     animate();
   }
 
+  // --- Skill animation: wind-up + spell effect ---
+
+  playSkillAnimation(casterId: string, targetId: string | undefined, effectType: string, onComplete?: () => void): void {
+    const casterMesh = this.unitMeshes.get(casterId);
+    if (!casterMesh || this.disposed) {
+      onComplete?.();
+      return;
+    }
+
+    const startPos = casterMesh.mesh.position.clone();
+    const windUpDuration = 14;
+    const holdDuration = 8;
+    const returnDuration = 12;
+    let frame = 0;
+
+    const animate = () => {
+      if (this.disposed) return;
+
+      if (frame < windUpDuration) {
+        // Lean back (wind-up)
+        const progress = frame / windUpDuration;
+        const eased = this.easeOutQuad(progress);
+        casterMesh.mesh.rotation.x = -eased * 0.2;
+        casterMesh.mesh.position.y = startPos.y + eased * 0.15;
+        frame++;
+        requestAnimationFrame(animate);
+      } else if (frame < windUpDuration + holdDuration) {
+        // Hold pose - spawn particles at midpoint
+        if (frame === windUpDuration + Math.floor(holdDuration / 2)) {
+          // Spawn spell effect at target (or caster for self/ally)
+          const effectTarget = targetId ? this.unitMeshes.get(targetId) : casterMesh;
+          if (effectTarget) {
+            const pos = effectTarget.mesh.position.clone().add(new BABYLON.Vector3(0, 0.8, 0));
+            this.spawnSkillParticles(pos, effectType);
+          }
+        }
+        frame++;
+        requestAnimationFrame(animate);
+      } else if (frame < windUpDuration + holdDuration + returnDuration) {
+        // Return to normal
+        const progress = (frame - windUpDuration - holdDuration) / returnDuration;
+        const eased = this.easeInQuad(progress);
+        casterMesh.mesh.rotation.x = -(1 - eased) * 0.2;
+        casterMesh.mesh.position.y = startPos.y + (1 - eased) * 0.15;
+        frame++;
+        requestAnimationFrame(animate);
+      } else {
+        casterMesh.mesh.rotation.x = 0;
+        casterMesh.mesh.position.y = startPos.y;
+        casterMesh.baseY = startPos.y;
+        onComplete?.();
+      }
+    };
+
+    animate();
+  }
+
+  private spawnSkillParticles(position: BABYLON.Vector3, effectType: string): void {
+    const ps = new BABYLON.ParticleSystem(`skill_${Date.now()}`, 60, this.scene);
+    ps.emitter = position;
+
+    switch (effectType) {
+      case 'fire':
+        ps.createConeEmitter(0.3, Math.PI / 6);
+        ps.minSize = 0.06; ps.maxSize = 0.18;
+        ps.minLifeTime = 0.2; ps.maxLifeTime = 0.6;
+        ps.emitRate = 120;
+        ps.color1 = new BABYLON.Color4(1.0, 0.7, 0.1, 1.0);
+        ps.color2 = new BABYLON.Color4(1.0, 0.3, 0.0, 0.9);
+        ps.colorDead = new BABYLON.Color4(0.4, 0.05, 0.0, 0.0);
+        ps.gravity = new BABYLON.Vector3(0, 2.5, 0);
+        ps.minEmitPower = 0.8; ps.maxEmitPower = 2.0;
+        ps.blendMode = BABYLON.ParticleSystem.BLENDMODE_ADD;
+        break;
+
+      case 'ice':
+        ps.createSphereEmitter(0.5);
+        ps.minSize = 0.04; ps.maxSize = 0.12;
+        ps.minLifeTime = 0.3; ps.maxLifeTime = 0.8;
+        ps.emitRate = 100;
+        ps.color1 = new BABYLON.Color4(0.6, 0.85, 1.0, 1.0);
+        ps.color2 = new BABYLON.Color4(0.3, 0.5, 1.0, 0.8);
+        ps.colorDead = new BABYLON.Color4(0.8, 0.9, 1.0, 0.0);
+        ps.gravity = new BABYLON.Vector3(0, -1.5, 0);
+        ps.minEmitPower = 0.5; ps.maxEmitPower = 1.8;
+        ps.blendMode = BABYLON.ParticleSystem.BLENDMODE_ADD;
+        break;
+
+      case 'heal':
+        ps.createSphereEmitter(0.4);
+        ps.minSize = 0.05; ps.maxSize = 0.14;
+        ps.minLifeTime = 0.4; ps.maxLifeTime = 1.0;
+        ps.emitRate = 80;
+        ps.color1 = new BABYLON.Color4(0.3, 1.0, 0.4, 1.0);
+        ps.color2 = new BABYLON.Color4(0.8, 1.0, 0.5, 0.8);
+        ps.colorDead = new BABYLON.Color4(0.5, 1.0, 0.6, 0.0);
+        ps.gravity = new BABYLON.Vector3(0, 2.0, 0);
+        ps.minEmitPower = 0.3; ps.maxEmitPower = 1.0;
+        ps.blendMode = BABYLON.ParticleSystem.BLENDMODE_ADD;
+        break;
+
+      case 'poison':
+        ps.createSphereEmitter(0.35);
+        ps.minSize = 0.04; ps.maxSize = 0.12;
+        ps.minLifeTime = 0.3; ps.maxLifeTime = 0.9;
+        ps.emitRate = 80;
+        ps.color1 = new BABYLON.Color4(0.4, 0.9, 0.15, 0.9);
+        ps.color2 = new BABYLON.Color4(0.15, 0.5, 0.1, 0.7);
+        ps.colorDead = new BABYLON.Color4(0.1, 0.3, 0.0, 0.0);
+        ps.gravity = new BABYLON.Vector3(0, 0.8, 0);
+        ps.minEmitPower = 0.4; ps.maxEmitPower = 1.2;
+        ps.blendMode = BABYLON.ParticleSystem.BLENDMODE_ADD;
+        break;
+
+      case 'lightning':
+        ps.createPointEmitter(
+          new BABYLON.Vector3(-0.3, 0, -0.3),
+          new BABYLON.Vector3(0.3, 2, 0.3)
+        );
+        ps.minSize = 0.02; ps.maxSize = 0.08;
+        ps.minLifeTime = 0.05; ps.maxLifeTime = 0.2;
+        ps.emitRate = 200;
+        ps.color1 = new BABYLON.Color4(1.0, 1.0, 0.5, 1.0);
+        ps.color2 = new BABYLON.Color4(0.7, 0.8, 1.0, 0.9);
+        ps.colorDead = new BABYLON.Color4(0.5, 0.5, 1.0, 0.0);
+        ps.gravity = new BABYLON.Vector3(0, -5, 0);
+        ps.minEmitPower = 2.0; ps.maxEmitPower = 5.0;
+        ps.blendMode = BABYLON.ParticleSystem.BLENDMODE_ADD;
+        break;
+
+      case 'buff':
+        ps.createSphereEmitter(0.6);
+        ps.minSize = 0.03; ps.maxSize = 0.10;
+        ps.minLifeTime = 0.5; ps.maxLifeTime = 1.2;
+        ps.emitRate = 60;
+        ps.color1 = new BABYLON.Color4(1.0, 0.85, 0.3, 0.9);
+        ps.color2 = new BABYLON.Color4(1.0, 0.65, 0.1, 0.7);
+        ps.colorDead = new BABYLON.Color4(1.0, 0.9, 0.5, 0.0);
+        ps.gravity = new BABYLON.Vector3(0, 1.5, 0);
+        ps.minEmitPower = 0.2; ps.maxEmitPower = 0.8;
+        ps.blendMode = BABYLON.ParticleSystem.BLENDMODE_ADD;
+        break;
+
+      case 'holy':
+        ps.createConeEmitter(0.3, Math.PI / 4);
+        ps.minSize = 0.05; ps.maxSize = 0.16;
+        ps.minLifeTime = 0.3; ps.maxLifeTime = 0.8;
+        ps.emitRate = 100;
+        ps.color1 = new BABYLON.Color4(1.0, 0.95, 0.6, 1.0);
+        ps.color2 = new BABYLON.Color4(1.0, 0.85, 0.3, 0.8);
+        ps.colorDead = new BABYLON.Color4(1.0, 1.0, 0.8, 0.0);
+        ps.gravity = new BABYLON.Vector3(0, 3.0, 0);
+        ps.minEmitPower = 0.5; ps.maxEmitPower = 1.5;
+        ps.blendMode = BABYLON.ParticleSystem.BLENDMODE_ADD;
+        break;
+
+      default: // generic magic
+        ps.createSphereEmitter(0.3);
+        ps.minSize = 0.04; ps.maxSize = 0.10;
+        ps.minLifeTime = 0.2; ps.maxLifeTime = 0.6;
+        ps.emitRate = 80;
+        ps.color1 = new BABYLON.Color4(0.7, 0.4, 1.0, 1.0);
+        ps.color2 = new BABYLON.Color4(0.4, 0.2, 0.8, 0.8);
+        ps.colorDead = new BABYLON.Color4(0.3, 0.1, 0.5, 0.0);
+        ps.gravity = new BABYLON.Vector3(0, 1.0, 0);
+        ps.minEmitPower = 0.5; ps.maxEmitPower = 1.5;
+        ps.blendMode = BABYLON.ParticleSystem.BLENDMODE_ADD;
+        break;
+    }
+
+    ps.targetStopDuration = 0.25;
+    ps.disposeOnStop = true;
+    ps.start();
+  }
+
   // --- Particle Effects ---
 
   private spawnHitSparks(position: BABYLON.Vector3): void {
@@ -813,24 +1014,48 @@ export class CombatRenderer {
   }
 
   private spawnDeathPoof(position: BABYLON.Vector3): void {
-    const ps = new BABYLON.ParticleSystem(`deathPoof_${Date.now()}`, 50, this.scene);
+    // Smoke cloud
+    const ps = new BABYLON.ParticleSystem(`deathPoof_${Date.now()}`, 80, this.scene);
     ps.emitter = position;
-    ps.createSphereEmitter(0.4);
-    ps.minSize = 0.08;
-    ps.maxSize = 0.2;
-    ps.minLifeTime = 0.4;
-    ps.maxLifeTime = 1.0;
-    ps.emitRate = 200;
+    ps.createSphereEmitter(0.5);
+    ps.minSize = 0.1;
+    ps.maxSize = 0.3;
+    ps.minLifeTime = 0.5;
+    ps.maxLifeTime = 1.2;
+    ps.emitRate = 250;
     ps.color1 = new BABYLON.Color4(0.5, 0.5, 0.5, 0.8);
     ps.color2 = new BABYLON.Color4(0.3, 0.3, 0.3, 0.6);
     ps.colorDead = new BABYLON.Color4(0.1, 0.1, 0.1, 0.0);
     ps.gravity = new BABYLON.Vector3(0, 1.5, 0);
     ps.minEmitPower = 0.5;
-    ps.maxEmitPower = 1.5;
+    ps.maxEmitPower = 2.0;
     ps.blendMode = BABYLON.ParticleSystem.BLENDMODE_STANDARD;
-    ps.targetStopDuration = 0.3;
+    ps.targetStopDuration = 0.35;
     ps.disposeOnStop = true;
     ps.start();
+
+    // Red spark burst
+    const sparks = new BABYLON.ParticleSystem(`deathSparks_${Date.now()}`, 40, this.scene);
+    sparks.emitter = position;
+    sparks.createPointEmitter(
+      new BABYLON.Vector3(-0.6, -0.3, -0.6),
+      new BABYLON.Vector3(0.6, 1.2, 0.6)
+    );
+    sparks.minSize = 0.02;
+    sparks.maxSize = 0.06;
+    sparks.minLifeTime = 0.1;
+    sparks.maxLifeTime = 0.35;
+    sparks.emitRate = 200;
+    sparks.color1 = new BABYLON.Color4(1.0, 0.4, 0.1, 1.0);
+    sparks.color2 = new BABYLON.Color4(1.0, 0.2, 0.0, 0.8);
+    sparks.colorDead = new BABYLON.Color4(0.6, 0.1, 0.0, 0.0);
+    sparks.gravity = new BABYLON.Vector3(0, -4, 0);
+    sparks.minEmitPower = 2.0;
+    sparks.maxEmitPower = 4.0;
+    sparks.blendMode = BABYLON.ParticleSystem.BLENDMODE_ADD;
+    sparks.targetStopDuration = 0.15;
+    sparks.disposeOnStop = true;
+    sparks.start();
   }
 
   // --- Floating damage/heal numbers ---
@@ -896,9 +1121,12 @@ export class CombatRenderer {
 
     // Animate: float up + fade out
     const startY = worldPos.y;
-    const duration = 50;
+    // Longer duration for bigger numbers
+    const duration = 55 + text.length * 4;
     let frame = 0;
-    const xDrift = (Math.random() - 0.5) * 0.4;
+    const xDrift = (Math.random() - 0.5) * 0.5;
+    // Offset toward camera for depth visibility
+    label.position.z -= 0.3;
 
     const animate = () => {
       if (this.disposed || frame >= duration) {

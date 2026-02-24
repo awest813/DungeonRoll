@@ -35,9 +35,9 @@ export function createScene(engine: BABYLON.Engine, canvas: HTMLCanvasElement): 
     new BABYLON.Vector3(0, 1, 0),
     scene
   );
-  ambientLight.intensity = 0.35;
+  ambientLight.intensity = 0.42;
   ambientLight.diffuse = new BABYLON.Color3(0.6, 0.65, 0.8);
-  ambientLight.groundColor = new BABYLON.Color3(0.15, 0.1, 0.2);
+  ambientLight.groundColor = new BABYLON.Color3(0.18, 0.12, 0.22);
 
   // Main directional (sun-like, warm)
   const dirLight = new BABYLON.DirectionalLight(
@@ -48,16 +48,25 @@ export function createScene(engine: BABYLON.Engine, canvas: HTMLCanvasElement): 
   dirLight.intensity = 0.6;
   dirLight.diffuse = new BABYLON.Color3(1.0, 0.95, 0.85);
 
+  // Fill light (opposite side, subtle)
+  const fillLight = new BABYLON.DirectionalLight(
+    'fillLight',
+    new BABYLON.Vector3(1, -2, 1.5),
+    scene
+  );
+  fillLight.intensity = 0.2;
+  fillLight.diffuse = new BABYLON.Color3(0.6, 0.65, 0.85);
+
   // Shadows
   const shadowGenerator = new BABYLON.ShadowGenerator(2048, dirLight);
   shadowGenerator.useBlurExponentialShadowMap = true;
   shadowGenerator.blurScale = 4;
   shadowGenerator.blurBoxOffset = 2;
-  shadowGenerator.setDarkness(0.4);
+  shadowGenerator.setDarkness(0.35);
 
   // Glow layer for emissive effects
   const glowLayer = new BABYLON.GlowLayer('glow', scene);
-  glowLayer.intensity = 0.6;
+  glowLayer.intensity = 0.75;
 
   // --- Board / Ground ---
 
@@ -226,6 +235,46 @@ export function createScene(engine: BABYLON.Engine, canvas: HTMLCanvasElement): 
     lightFlicker.setKeys(lightKeys);
     torchLight.animations.push(lightFlicker);
     scene.beginAnimation(torchLight, 0, 30, true);
+  });
+
+  // --- Low dungeon walls (partial, for atmosphere) ---
+  const wallMat = new BABYLON.StandardMaterial('wallMat', scene);
+  wallMat.diffuseColor = new BABYLON.Color3(0.18, 0.15, 0.12);
+  wallMat.specularColor = new BABYLON.Color3(0.04, 0.04, 0.04);
+
+  // Back wall (behind enemies)
+  const backWall = BABYLON.MeshBuilder.CreateBox(
+    'backWall',
+    { width: 14, height: 2.0, depth: 0.4 },
+    scene
+  );
+  backWall.position.set(0, 1.0, 6.8);
+  backWall.material = wallMat;
+  backWall.receiveShadows = true;
+  shadowGenerator.addShadowCaster(backWall);
+
+  // Side walls (partial)
+  [-1, 1].forEach((side, i) => {
+    const sideWall = BABYLON.MeshBuilder.CreateBox(
+      `sideWall_${i}`,
+      { width: 0.4, height: 1.6, depth: 8 },
+      scene
+    );
+    sideWall.position.set(side * 6.8, 0.8, 2);
+    sideWall.material = wallMat;
+    sideWall.receiveShadows = true;
+    shadowGenerator.addShadowCaster(sideWall);
+
+    // Decorative stone block on top of wall
+    const capStone = BABYLON.MeshBuilder.CreateBox(
+      `wallCap_${i}`,
+      { width: 0.6, height: 0.15, depth: 8.4 },
+      scene
+    );
+    capStone.position.set(side * 6.8, 1.65, 2);
+    const capMat = new BABYLON.StandardMaterial(`capMat_${i}`, scene);
+    capMat.diffuseColor = new BABYLON.Color3(0.25, 0.2, 0.15);
+    capStone.material = capMat;
   });
 
   // --- Center battle divider line ---
