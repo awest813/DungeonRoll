@@ -270,7 +270,15 @@ export function createRewardScreen(): RewardScreen {
       container.style.display = 'flex';
     },
     hide() {
-      container.style.display = 'none';
+      if (container.style.display !== 'none' && container.style.display !== '') {
+        container.classList.add('screen-fade-out');
+        setTimeout(() => {
+          container.classList.remove('screen-fade-out');
+          container.style.display = 'none';
+        }, 250);
+      } else {
+        container.style.display = 'none';
+      }
     },
     destroy() {
       container.remove();

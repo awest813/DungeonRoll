@@ -14,6 +14,8 @@ export interface DungeonPartyMember {
   mp: number;
   maxMp: number;
   level: number;
+  xp: number;
+  xpToNext: number;
 }
 
 export interface DungeonMapData {
@@ -21,6 +23,7 @@ export interface DungeonMapData {
   currentRoomIndex: number;
   party: DungeonPartyMember[];
   encounterPreview: string[];
+  encounterTotalHp: number;
   gold: number;
   restCost: number;
 }
@@ -154,16 +157,19 @@ export function createDungeonMapScreen(): DungeonMapScreen {
       const hpPercent = (member.hp / member.maxHp) * 100;
       const mpPercent = member.maxMp > 0 ? (member.mp / member.maxMp) * 100 : 0;
       const hpColor = hpPercent > 50 ? '#4CAF50' : hpPercent > 25 ? '#ffa500' : '#f44336';
+      const xpPercent = member.xpToNext > 0 ? (member.xp / member.xpToNext) * 100 : 100;
+      const isDead = member.hp <= 0;
 
       return `
         <div style="
           padding: 10px 12px; margin-bottom: 6px;
-          background: rgba(0, 50, 0, 0.2);
-          border: 1px solid #4CAF50;
+          background: ${isDead ? 'rgba(60, 30, 30, 0.2)' : 'rgba(0, 50, 0, 0.2)'};
+          border: 1px solid ${isDead ? '#555' : '#4CAF50'};
           border-radius: 5px;
+          ${isDead ? 'opacity: 0.5;' : ''}
         ">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-            <span style="font-weight: bold; font-size: 13px;">${member.name}</span>
+            <span style="font-weight: bold; font-size: 13px;">${member.name}${isDead ? ' <span style="color: #f44336; font-size: 10px;">[DEAD]</span>' : ''}</span>
             <span style="font-size: 11px; color: #aaa;">Lv${member.level} ${member.characterClass.toUpperCase()}</span>
           </div>
           <div style="display: flex; gap: 12px;">
@@ -178,6 +184,12 @@ export function createDungeonMapScreen(): DungeonMapScreen {
               <div style="background: rgba(0,0,0,0.4); height: 5px; border-radius: 3px; overflow: hidden;">
                 <div style="width: ${mpPercent}%; height: 100%; background: #64B5F6; transition: width 0.3s;"></div>
               </div>
+            </div>
+          </div>
+          <div style="margin-top: 4px;">
+            <div style="font-size: 9px; color: #CE93D8; margin-bottom: 2px;">XP ${member.xp}/${member.xpToNext}</div>
+            <div style="background: rgba(0,0,0,0.4); height: 3px; border-radius: 2px; overflow: hidden;">
+              <div style="width: ${xpPercent}%; height: 100%; background: #CE93D8; transition: width 0.3s;"></div>
             </div>
           </div>
         </div>
@@ -214,11 +226,27 @@ export function createDungeonMapScreen(): DungeonMapScreen {
       </div>
     `;
 
-    // Encounter preview
+    // Encounter preview with difficulty
+    const partyTotalHp = data.party.reduce((s, m) => s + m.hp, 0);
+    const partyAvgLevel = data.party.length > 0 ? data.party.reduce((s, m) => s + m.level, 0) / data.party.length : 1;
+    const nextRoom = data.rooms[data.currentRoomIndex];
+    let diffLabel = '';
+    let diffColor = '#4CAF50';
+    if (nextRoom) {
+      const levelDiff = nextRoom.recommendedLevel - partyAvgLevel;
+      const hpRatio = data.encounterTotalHp / Math.max(partyTotalHp, 1);
+      if (levelDiff >= 3 || hpRatio > 2.5) { diffLabel = 'DEADLY'; diffColor = '#f44336'; }
+      else if (levelDiff >= 1 || hpRatio > 1.5) { diffLabel = 'HARD'; diffColor = '#ffa500'; }
+      else if (levelDiff >= -1 || hpRatio > 0.8) { diffLabel = 'MEDIUM'; diffColor = '#FFD54F'; }
+      else { diffLabel = 'EASY'; diffColor = '#4CAF50'; }
+    }
     const encounterInfo = data.encounterPreview.length > 0
       ? `
         <div style="margin-top: 16px;">
-          <div style="font-size: 12px; color: #f44336; letter-spacing: 2px; margin-bottom: 8px;">ENEMIES AHEAD</div>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+            <span style="font-size: 12px; color: #f44336; letter-spacing: 2px;">ENEMIES AHEAD</span>
+            ${diffLabel ? `<span style="font-size: 10px; font-weight: bold; color: ${diffColor}; letter-spacing: 2px; padding: 2px 8px; border: 1px solid ${diffColor}; border-radius: 3px;">${diffLabel}</span>` : ''}
+          </div>
           <div style="
             padding: 10px 14px;
             background: rgba(100, 0, 0, 0.15);
@@ -226,7 +254,10 @@ export function createDungeonMapScreen(): DungeonMapScreen {
             border-radius: 5px;
             font-size: 13px;
             color: #e88;
-          ">${data.encounterPreview.join(', ')}</div>
+          ">
+            ${data.encounterPreview.join(', ')}
+            <span style="float: right; font-size: 10px; color: #f44336;">HP: ${data.encounterTotalHp}</span>
+          </div>
         </div>
       `
       : '';
@@ -345,7 +376,15 @@ export function createDungeonMapScreen(): DungeonMapScreen {
       container.style.display = 'flex';
     },
     hide() {
-      container.style.display = 'none';
+      if (container.style.display !== 'none' && container.style.display !== '') {
+        container.classList.add('screen-fade-out');
+        setTimeout(() => {
+          container.classList.remove('screen-fade-out');
+          container.style.display = 'none';
+        }, 250);
+      } else {
+        container.style.display = 'none';
+      }
     },
     destroy() {
       container.remove();

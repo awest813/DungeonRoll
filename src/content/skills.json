@@ -3,7 +3,7 @@
     {
       "id": "basic-attack",
       "name": "Basic Attack",
-      "description": "Deal standard weapon damage to one target.",
+      "description": "Deal 1d6 + ATK physical damage to one target.",
       "mpCost": 0,
       "targeting": "single_enemy",
       "effect": {
@@ -16,7 +16,7 @@
     {
       "id": "power-strike",
       "name": "Power Strike",
-      "description": "A mighty blow that deals heavy damage.",
+      "description": "Deal 2d6 + 150% ATK physical damage to one enemy.",
       "mpCost": 4,
       "targeting": "single_enemy",
       "effect": {
@@ -29,7 +29,7 @@
     {
       "id": "cleave",
       "name": "Cleave",
-      "description": "Swing wide to strike all enemies.",
+      "description": "Deal 1d6 + 80% ATK physical damage to all enemies.",
       "mpCost": 6,
       "targeting": "all_enemies",
       "effect": {
@@ -42,7 +42,7 @@
     {
       "id": "shield-bash",
       "name": "Shield Bash",
-      "description": "Bash an enemy to stun them for 1 turn.",
+      "description": "Deal 1d4 + 50% ATK damage. Stuns target for 1 turn.",
       "mpCost": 5,
       "targeting": "single_enemy",
       "effect": {
@@ -57,7 +57,7 @@
     {
       "id": "fire-bolt",
       "name": "Fire Bolt",
-      "description": "Hurl a bolt of fire at one enemy.",
+      "description": "Deal 2d6 + 120% ATK magical damage to one enemy.",
       "mpCost": 5,
       "targeting": "single_enemy",
       "effect": {
@@ -70,7 +70,7 @@
     {
       "id": "ice-storm",
       "name": "Ice Storm",
-      "description": "A storm of ice shards hits all enemies.",
+      "description": "Deal 1d8 + ATK magical damage to all enemies.",
       "mpCost": 10,
       "targeting": "all_enemies",
       "effect": {
@@ -83,7 +83,7 @@
     {
       "id": "weaken",
       "name": "Weaken",
-      "description": "Curse an enemy, reducing their attack.",
+      "description": "Reduce target's ATK by 3 for 3 turns.",
       "mpCost": 4,
       "targeting": "single_enemy",
       "effect": {
@@ -96,7 +96,7 @@
     {
       "id": "poison-bolt",
       "name": "Poison Bolt",
-      "description": "Poison an enemy, dealing damage over time.",
+      "description": "Deal 1d4 + 50% ATK magical damage. Poison: 4 dmg/turn for 3 turns.",
       "mpCost": 4,
       "targeting": "single_enemy",
       "effect": {
@@ -112,7 +112,7 @@
     {
       "id": "aimed-shot",
       "name": "Aimed Shot",
-      "description": "A carefully aimed shot with high crit chance.",
+      "description": "Deal 1d8 + 130% ATK physical damage. High crit chance.",
       "mpCost": 3,
       "targeting": "single_enemy",
       "effect": {
@@ -125,7 +125,7 @@
     {
       "id": "volley",
       "name": "Volley",
-      "description": "Fire a volley of arrows at all enemies.",
+      "description": "Deal 1d6 + 70% ATK physical damage to all enemies.",
       "mpCost": 7,
       "targeting": "all_enemies",
       "effect": {
@@ -138,7 +138,7 @@
     {
       "id": "heal",
       "name": "Heal",
-      "description": "Restore HP to one ally.",
+      "description": "Restore 2d6+5 HP to one ally.",
       "mpCost": 5,
       "targeting": "single_ally",
       "effect": {
@@ -149,7 +149,7 @@
     {
       "id": "group-heal",
       "name": "Group Heal",
-      "description": "Restore HP to all allies.",
+      "description": "Restore 1d6+3 HP to all allies.",
       "mpCost": 12,
       "targeting": "all_allies",
       "effect": {
@@ -160,7 +160,7 @@
     {
       "id": "holy-light",
       "name": "Holy Light",
-      "description": "Deal magical damage to one enemy with divine power.",
+      "description": "Deal 2d6 + ATK magical damage with divine power.",
       "mpCost": 6,
       "targeting": "single_enemy",
       "effect": {
@@ -173,7 +173,7 @@
     {
       "id": "shield-of-faith",
       "name": "Shield of Faith",
-      "description": "Grant an ally a protective shield.",
+      "description": "Grant +4 armor to one ally for 3 turns.",
       "mpCost": 4,
       "targeting": "single_ally",
       "effect": {
@@ -186,7 +186,7 @@
     {
       "id": "backstab",
       "name": "Backstab",
-      "description": "Strike from the shadows for massive damage.",
+      "description": "Deal 2d8 + 150% ATK physical damage from the shadows.",
       "mpCost": 5,
       "targeting": "single_enemy",
       "effect": {
@@ -199,7 +199,7 @@
     {
       "id": "poison-blade",
       "name": "Poison Blade",
-      "description": "Attack with a poisoned weapon.",
+      "description": "Deal 1d6 + ATK physical damage. Poison: 3 dmg/turn for 2 turns.",
       "mpCost": 3,
       "targeting": "single_enemy",
       "effect": {
@@ -215,7 +215,7 @@
     {
       "id": "regenerate",
       "name": "Regenerate",
-      "description": "Grant an ally regeneration over time.",
+      "description": "Grant +5 HP/turn regen to one ally for 3 turns.",
       "mpCost": 6,
       "targeting": "single_ally",
       "effect": {
@@ -228,7 +228,7 @@
     {
       "id": "war-cry",
       "name": "War Cry",
-      "description": "Buff all allies, increasing attack power.",
+      "description": "Grant +3 ATK to all allies for 3 turns.",
       "mpCost": 8,
       "targeting": "all_allies",
       "effect": {

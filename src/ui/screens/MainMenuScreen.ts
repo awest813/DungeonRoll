@@ -159,6 +159,14 @@ export function createMainMenuScreen(): MainMenuScreen {
         from { opacity: 0; }
         to { opacity: 1; }
       }
+      @keyframes fadeOut {
+        from { opacity: 1; }
+        to { opacity: 0; }
+      }
+      .screen-fade-out {
+        animation: fadeOut 0.25s ease-out forwards;
+        pointer-events: none !important;
+      }
       /* Custom scrollbar for UI panels */
       #dungeon-map-screen ::-webkit-scrollbar,
       #reward-screen ::-webkit-scrollbar,

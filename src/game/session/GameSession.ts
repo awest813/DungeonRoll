@@ -235,12 +235,16 @@ export class GameSession {
     const encounterIndex = room ? this.currentEncounterIndex % room.encounters.length : 0;
     const encounter = room?.encounters[encounterIndex];
 
-    // Build encounter preview from enemy names
+    // Build encounter preview from enemy names and total HP
     const encounterPreview: string[] = [];
+    let encounterTotalHp = 0;
     if (encounter) {
       for (const enemyId of encounter.enemyIds) {
         const template = this.content.enemies.get(enemyId);
-        if (template) encounterPreview.push(template.name);
+        if (template) {
+          encounterPreview.push(template.name);
+          encounterTotalHp += template.hp;
+        }
       }
     }
 
@@ -258,8 +262,11 @@ export class GameSession {
         mp: c.mp,
         maxMp: c.maxMp,
         level: c.level,
+        xp: c.xp,
+        xpToNext: c.xpToNext,
       })),
       encounterPreview,
+      encounterTotalHp,
       gold: this.gold,
       restCost: REST_COST,
     });
@@ -339,7 +346,8 @@ export class GameSession {
       enemies,
       this.content,
       combatRenderer,
-      (victor) => this.onCombatEnd(victor, party, enemies, room)
+      (victor) => this.onCombatEnd(victor, party, enemies, room),
+      this.gold
     );
 
     this.combatController.startTurn();

@@ -27,6 +27,7 @@ export class CombatUIController {
   private onCombatEndCallback?: (victor: 'party' | 'enemy') => void;
   private hasCombatEnded: boolean = false;
   private selectedHeroIndex: number = 0;
+  private gold: number = 0;
 
   constructor(
     combat: CombatEngine,
@@ -36,7 +37,8 @@ export class CombatUIController {
     enemies: Enemy[],
     content: GameContent,
     renderer?: CombatRenderer,
-    onCombatEnd?: (victor: 'party' | 'enemy') => void
+    onCombatEnd?: (victor: 'party' | 'enemy') => void,
+    gold: number = 0
   ) {
     this.combat = combat;
     this.log = log;
@@ -46,6 +48,7 @@ export class CombatUIController {
     this.content = content;
     this.renderer = renderer;
     this.onCombatEndCallback = onCombatEnd;
+    this.gold = gold;
 
     // Initialize selected hero to first alive
     const firstAlive = party.findIndex(c => c.hp > 0);
@@ -351,6 +354,10 @@ export class CombatUIController {
         }
       });
     }
+
+    // Turn counter and gold
+    this.ui.updateTurnCounter(this.combat.getState().turnNumber);
+    this.ui.updateGold(this.gold);
 
     const messages = this.log.getMessages();
     const lastMessages = messages.slice(Math.max(0, messages.length - 30));

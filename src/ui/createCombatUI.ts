@@ -41,6 +41,8 @@ export interface CombatUI {
   updateEnemies(enemies: CombatUIEnemy[]): void;
   updateSkills(skills: CombatUISkill[], currentMp: number): void;
   updateItems(items: CombatUIItem[]): void;
+  updateTurnCounter(turn: number): void;
+  updateGold(gold: number): void;
   addLogEntry(message: string): void;
   clearLog(): void;
   onAttack(callback: (heroIndex: number, targetEnemyIndex: number) => void): void;
@@ -77,15 +79,27 @@ export function createCombatUI(): CombatUI {
   titleEl.style.cssText = `
     background: linear-gradient(135deg, rgba(76, 175, 80, 0.4), rgba(20, 20, 30, 0.9));
     color: #4CAF50;
-    padding: 12px;
+    padding: 10px 16px;
     font-size: 18px;
     font-weight: bold;
     text-align: center;
     letter-spacing: 4px;
     border-bottom: 2px solid #4CAF50;
     border-radius: 8px 8px 0 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
   `;
-  titleEl.textContent = 'COMBAT';
+  const titleLabel = document.createElement('span');
+  titleLabel.textContent = 'COMBAT';
+  const titleInfo = document.createElement('span');
+  titleInfo.style.cssText = `font-size: 11px; letter-spacing: 2px; display: flex; gap: 14px; align-items: center;`;
+  titleInfo.innerHTML = `
+    <span id="combat-turn-counter" style="color: #aaa;">TURN 1</span>
+    <span id="combat-gold-display" style="color: #FFE082;">0g</span>
+  `;
+  titleEl.appendChild(titleLabel);
+  titleEl.appendChild(titleInfo);
 
   const contentEl = document.createElement('div');
   contentEl.style.cssText = `
@@ -257,11 +271,11 @@ export function createCombatUI(): CombatUI {
           ${heroSelector}
         </div>
         ${enemySelector}
-        <button id="combat-attack-btn" class="action-btn" style="${actionBtnStyle('#c62828', dis)}" ${dis ? 'disabled' : ''}>ATTACK</button>
-        <button id="combat-guard-btn" class="action-btn" style="${actionBtnStyle('#1565C0', dis)}" ${dis ? 'disabled' : ''}>GUARD</button>
-        <button id="combat-skills-btn" class="action-btn" style="${actionBtnStyle('#6A1B9A', dis)}" ${dis ? 'disabled' : ''}>SKILLS</button>
-        <button id="combat-items-btn" class="action-btn" style="${actionBtnStyle('#E65100', dis)}" ${dis ? 'disabled' : ''}>ITEMS</button>
-        <button id="combat-end-turn-btn" class="action-btn" style="${actionBtnStyle('#37474F', dis)}" ${dis ? 'disabled' : ''}>END TURN</button>
+        <button id="combat-attack-btn" class="action-btn" style="${actionBtnStyle('#c62828', dis)}" ${dis ? 'disabled' : ''}><span style="opacity:0.5;font-size:10px;">[A]</span> ATTACK</button>
+        <button id="combat-guard-btn" class="action-btn" style="${actionBtnStyle('#1565C0', dis)}" ${dis ? 'disabled' : ''}><span style="opacity:0.5;font-size:10px;">[G]</span> GUARD</button>
+        <button id="combat-skills-btn" class="action-btn" style="${actionBtnStyle('#6A1B9A', dis)}" ${dis ? 'disabled' : ''}><span style="opacity:0.5;font-size:10px;">[S]</span> SKILLS</button>
+        <button id="combat-items-btn" class="action-btn" style="${actionBtnStyle('#E65100', dis)}" ${dis ? 'disabled' : ''}><span style="opacity:0.5;font-size:10px;">[I]</span> ITEMS</button>
+        <button id="combat-end-turn-btn" class="action-btn" style="${actionBtnStyle('#37474F', dis)}" ${dis ? 'disabled' : ''}><span style="opacity:0.5;font-size:10px;">[E]</span> END TURN</button>
       `;
     } else if (actionMode === 'skills') {
       const hasEnemySkill = currentSkills.some(s => s.targeting === 'single_enemy');
@@ -283,8 +297,9 @@ export function createCombatUI(): CombatUI {
           </div>`
         : '';
 
-      const skillButtons = currentSkills.map(skill => {
+      const skillButtons = currentSkills.map((skill, idx) => {
         const canUse = currentMp >= skill.mpCost && actionsEnabled;
+        const hotkey = idx < 9 ? idx + 1 : '';
         return `
         <button class="skill-btn" data-skill-id="${skill.id}" data-targeting="${skill.targeting}" style="
           width: 100%; padding: 8px; margin-bottom: 4px;
@@ -296,13 +311,13 @@ export function createCombatUI(): CombatUI {
           text-align: left; transition: background 0.15s;
           outline: none; opacity: ${canUse ? '1' : '0.5'};
         " title="${skill.description}" ${!canUse ? 'disabled' : ''}>
-          ${skill.name} ${skill.mpCost > 0 ? `<span style="color: ${canUse ? '#64B5F6' : '#555'};">(${skill.mpCost} MP)</span>` : ''}
+          ${hotkey ? `<span style="opacity:0.5;font-size:10px;">[${hotkey}]</span> ` : ''}${skill.name} ${skill.mpCost > 0 ? `<span style="color: ${canUse ? '#64B5F6' : '#555'};">(${skill.mpCost} MP)</span>` : ''}
         </button>
       `}).join('');
 
       actionButtons.innerHTML = `
         <div style="margin-bottom: 8px;">
-          <button id="combat-back-btn" style="${actionBtnStyle('#37474F', false)}">BACK</button>
+          <button id="combat-back-btn" style="${actionBtnStyle('#37474F', false)}"><span style="opacity:0.5;font-size:10px;">[Esc]</span> BACK</button>
         </div>
         ${hasEnemySkill ? enemySelector : ''}
         ${allySelector}
@@ -326,7 +341,7 @@ export function createCombatUI(): CombatUI {
           </div>`
         : '';
 
-      const itemButtons = currentItems.filter(i => i.quantity > 0).map(item => `
+      const itemButtons = currentItems.filter(i => i.quantity > 0).map((item, idx) => `
         <button class="item-btn" data-item-id="${item.itemId}" style="
           width: 100%; padding: 8px; margin-bottom: 4px;
           background: ${actionsEnabled ? 'rgba(230, 81, 0, 0.3)' : 'rgba(60, 60, 60, 0.3)'};
@@ -337,13 +352,13 @@ export function createCombatUI(): CombatUI {
           transition: background 0.15s; outline: none;
           opacity: ${actionsEnabled ? '1' : '0.5'};
         " ${!actionsEnabled ? 'disabled' : ''}>
-          ${item.name} <span style="color: ${actionsEnabled ? '#aaa' : '#555'};">x${item.quantity}</span>
+          ${idx < 9 ? `<span style="opacity:0.5;font-size:10px;">[${idx + 1}]</span> ` : ''}${item.name} <span style="color: ${actionsEnabled ? '#aaa' : '#555'};">x${item.quantity}</span>
         </button>
       `).join('');
 
       actionButtons.innerHTML = `
         <div style="margin-bottom: 8px;">
-          <button id="combat-back-btn" style="${actionBtnStyle('#37474F', false)}">BACK</button>
+          <button id="combat-back-btn" style="${actionBtnStyle('#37474F', false)}"><span style="opacity:0.5;font-size:10px;">[Esc]</span> BACK</button>
         </div>
         ${itemTargetSelector}
         ${itemButtons.length > 0 ? itemButtons : '<div style="color: #666; font-size: 11px; padding: 4px;">No items available</div>'}
@@ -388,7 +403,16 @@ export function createCombatUI(): CombatUI {
     document.getElementById('combat-items-btn')?.addEventListener('click', () => {
       if (actionsEnabled) {
         actionMode = 'items';
-        selectedItemTargetIndex = selectedHeroIndex; // default target = self
+        // Auto-select lowest-HP alive ally as item target
+        let lowestHpIdx = selectedHeroIndex;
+        let lowestPct = 1;
+        currentParty.forEach((c, i) => {
+          if (c.hp > 0 && c.maxHp > 0) {
+            const pct = c.hp / c.maxHp;
+            if (pct < lowestPct) { lowestPct = pct; lowestHpIdx = i; }
+          }
+        });
+        selectedItemTargetIndex = lowestHpIdx;
         renderActionButtons();
       }
     });
@@ -453,6 +477,79 @@ export function createCombatUI(): CombatUI {
   }
 
   renderActionButtons();
+
+  // --- Keyboard shortcuts ---
+  function handleKeyDown(e: KeyboardEvent) {
+    if (container.style.display === 'none' || !actionsEnabled) return;
+    const key = e.key.toLowerCase();
+
+    if (actionMode === 'main') {
+      if (key === 'a') { document.getElementById('combat-attack-btn')?.click(); e.preventDefault(); }
+      else if (key === 'g') { document.getElementById('combat-guard-btn')?.click(); e.preventDefault(); }
+      else if (key === 's') { document.getElementById('combat-skills-btn')?.click(); e.preventDefault(); }
+      else if (key === 'i') { document.getElementById('combat-items-btn')?.click(); e.preventDefault(); }
+      else if (key === 'e') { document.getElementById('combat-end-turn-btn')?.click(); e.preventDefault(); }
+      else if (key === 'tab') {
+        // Cycle enemy target
+        e.preventDefault();
+        const aliveEnemies = currentEnemies.map((en, i) => ({ en, i })).filter(x => x.en.hp > 0);
+        if (aliveEnemies.length > 0) {
+          const curIdx = aliveEnemies.findIndex(x => x.i === selectedEnemyIndex);
+          const nextIdx = (curIdx + 1) % aliveEnemies.length;
+          selectedEnemyIndex = aliveEnemies[nextIdx].i;
+          renderActionButtons();
+        }
+      }
+    } else if (actionMode === 'skills') {
+      if (key === 'escape' || key === 'b') { document.getElementById('combat-back-btn')?.click(); e.preventDefault(); }
+      else if (key === 'tab') {
+        // Cycle ally target in skill mode
+        e.preventDefault();
+        const aliveAllies = currentParty.map((c, i) => ({ c, i })).filter(x => x.c.hp > 0);
+        if (aliveAllies.length > 0) {
+          const curIdx = aliveAllies.findIndex(x => x.i === selectedAllyTargetIndex);
+          const nextIdx = (curIdx + 1) % aliveAllies.length;
+          selectedAllyTargetIndex = aliveAllies[nextIdx].i;
+          renderActionButtons();
+        }
+      } else {
+        const num = parseInt(key);
+        if (num >= 1 && num <= currentSkills.length) {
+          const skillBtns = document.querySelectorAll('.skill-btn:not([disabled])');
+          // Find the nth enabled skill button
+          let enabledIdx = 0;
+          for (let si = 0; si < currentSkills.length; si++) {
+            if (currentMp >= currentSkills[si].mpCost) {
+              enabledIdx++;
+              if (si === num - 1) { (skillBtns[si] as HTMLElement)?.click(); e.preventDefault(); break; }
+            }
+          }
+        }
+      }
+    } else if (actionMode === 'items') {
+      if (key === 'escape' || key === 'b') { document.getElementById('combat-back-btn')?.click(); e.preventDefault(); }
+      else if (key === 'tab') {
+        // Cycle item target
+        e.preventDefault();
+        const aliveAllies = currentParty.map((c, i) => ({ c, i })).filter(x => x.c.hp > 0);
+        if (aliveAllies.length > 0) {
+          const curIdx = aliveAllies.findIndex(x => x.i === selectedItemTargetIndex);
+          const nextIdx = (curIdx + 1) % aliveAllies.length;
+          selectedItemTargetIndex = aliveAllies[nextIdx].i;
+          renderActionButtons();
+        }
+      } else {
+        const num = parseInt(key);
+        const visibleItems = currentItems.filter(it => it.quantity > 0);
+        if (num >= 1 && num <= visibleItems.length) {
+          const itemBtns = document.querySelectorAll('.item-btn:not([disabled])');
+          (itemBtns[num - 1] as HTMLElement)?.click();
+          e.preventDefault();
+        }
+      }
+    }
+  }
+  document.addEventListener('keydown', handleKeyDown);
 
   return {
     show() {
@@ -592,6 +689,16 @@ export function createCombatUI(): CombatUI {
       if (actionMode === 'items') renderActionButtons();
     },
 
+    updateTurnCounter(turn) {
+      const el = document.getElementById('combat-turn-counter');
+      if (el) el.textContent = `TURN ${turn}`;
+    },
+
+    updateGold(gold) {
+      const el = document.getElementById('combat-gold-display');
+      if (el) el.textContent = `${gold}g`;
+    },
+
     addLogEntry(message) {
       const log = document.getElementById('combat-log-entries');
       if (!log) return;
@@ -644,6 +751,7 @@ export function createCombatUI(): CombatUI {
     },
 
     destroy() {
+      document.removeEventListener('keydown', handleKeyDown);
       container.remove();
     },
   };
