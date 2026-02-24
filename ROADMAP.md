@@ -52,6 +52,11 @@ Track of what's done and what comes next.
 - **Buff stacking** — strength-tonic attack bonus now tracked via `Character.attackBuff`, capped at +20/run
 - **Empty encounter modulo** — `showEventScreen` and `startCombatEncounter` guard against `room.encounters.length === 0`
 - **Minimap `Math.max` spread** — guarded against empty `depth.values()` iterator
+- **Equipment bonus asymmetry** — `removeEquipmentBonuses` now subtracts the HP/MP bonus (not just clamps), so equip→damage→unequip→re-equip no longer causes permanent stat loss. Unequipping cannot kill (floor of 1 HP)
+- **`awardXp` division by zero** — early return when 0 alive party members prevents `Math.floor(xp / 0)` → `Infinity` XP
+- **Level-up HP/MP cap** — growth is now capped at maxHp/maxMp via `Math.min` to prevent exceeding maximum
+- **Enemy AI dead-target fallback** — when all party dead, enemy AI now guards instead of attacking a dead target
+- **`pickRandom`/`pickWeakest` empty-array guard** — both throw explicit errors on empty arrays instead of silently returning `undefined`
 
 ---
 

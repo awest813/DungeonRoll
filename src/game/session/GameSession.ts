@@ -615,8 +615,8 @@ export class GameSession {
   }
 
   private removeEquipmentBonuses(char: Character, tmpl: EquipmentTemplate): void {
-    if (tmpl.bonuses.hp) { char.maxHp -= tmpl.bonuses.hp; char.hp = Math.min(char.hp, char.maxHp); }
-    if (tmpl.bonuses.mp) { char.maxMp -= tmpl.bonuses.mp; char.mp = Math.min(char.mp, char.maxMp); }
+    if (tmpl.bonuses.hp) { char.maxHp -= tmpl.bonuses.hp; char.hp = Math.max(1, Math.min(char.hp - tmpl.bonuses.hp, char.maxHp)); }
+    if (tmpl.bonuses.mp) { char.maxMp -= tmpl.bonuses.mp; char.mp = Math.max(0, Math.min(char.mp - tmpl.bonuses.mp, char.maxMp)); }
     if (tmpl.bonuses.attack) char.attack -= tmpl.bonuses.attack;
     if (tmpl.bonuses.armor) char.armor -= tmpl.bonuses.armor;
     if (tmpl.bonuses.speed) char.speed -= tmpl.bonuses.speed;

@@ -18,7 +18,9 @@ export interface LevelUpResult {
 
 export function awardXp(party: Character[], xp: number, classes: Map<CharacterClass, ClassTemplate>): LevelUpResult[] {
   const results: LevelUpResult[] = [];
-  const xpPerMember = Math.floor(xp / party.filter(c => c.hp > 0).length);
+  const aliveCount = party.filter(c => c.hp > 0).length;
+  if (aliveCount === 0) return results;
+  const xpPerMember = Math.floor(xp / aliveCount);
 
   for (const character of party) {
     if (character.hp <= 0) continue;
@@ -51,9 +53,9 @@ function levelUp(character: Character, classes: Map<CharacterClass, ClassTemplat
   const speedGain = classTemplate.speedGrowth;
 
   character.maxHp += hpGain;
-  character.hp += hpGain;
+  character.hp = Math.min(character.hp + hpGain, character.maxHp);
   character.maxMp += mpGain;
-  character.mp += mpGain;
+  character.mp = Math.min(character.mp + mpGain, character.maxMp);
   character.attack += attackGain;
   character.armor += armorGain;
   character.speed += speedGain;

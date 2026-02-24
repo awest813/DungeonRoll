@@ -13,7 +13,8 @@ export function decideEnemyAction(
 ): CombatAction {
   const aliveParty = party.filter(c => c.hp > 0);
   if (aliveParty.length === 0) {
-    return { type: 'attack', actorId: enemy.id, targetId: party[0]?.id };
+    // All party dead — combat should have ended. Guard action as fallback.
+    return { type: 'guard', actorId: enemy.id };
   }
 
   const availableSkills = enemy.skillIds
@@ -245,9 +246,11 @@ function bossAI(
 }
 
 function pickRandom<T>(arr: T[]): T {
+  if (arr.length === 0) throw new Error('pickRandom called on empty array');
   return arr[Math.floor(Math.random() * arr.length)];
 }
 
 function pickWeakest(party: Character[]): Character {
+  if (party.length === 0) throw new Error('pickWeakest called on empty array');
   return [...party].sort((a, b) => a.hp - b.hp)[0];
 }
