@@ -101,9 +101,10 @@ function buildMinimap(
     byDepth.get(d)!.push(id);
   }
 
-  const maxDepth = Math.max(...depth.values());
+  const maxDepth = depth.size > 0 ? Math.max(...depth.values()) : 0;
   const numLevels = maxDepth + 1;
-  const maxPerLevel = Math.max(...Array.from(byDepth.values()).map(v => v.length));
+  const byDepthArrays = Array.from(byDepth.values());
+  const maxPerLevel = byDepthArrays.length > 0 ? Math.max(...byDepthArrays.map(v => v.length)) : 1;
 
   const svgW = 640;
   const nodeR = 12;

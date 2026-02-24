@@ -23,6 +23,7 @@ export interface Character {
   attack: number;
   armor: number;
   speed: number;
+  attackBuff: number;  // cumulative item-granted attack bonus (capped per run)
   level: number;
   xp: number;
   xpToNext: number;

@@ -1,130 +1,147 @@
-# Dungeon Roll - Tabletop JRPG Engine
+# Dungeon Roll — Tabletop JRPG Engine
 
-> ⚠️ **IMPORTANT:** Do NOT open `index.html` directly! Use `npm run dev` instead.
-> Opening HTML files directly causes CORS errors (blank screen). See [HOW_TO_RUN.md](HOW_TO_RUN.md) for details.
+> **Do NOT open `index.html` directly.** Use `npm run dev` to avoid CORS errors.
+> See [HOW_TO_RUN.md](HOW_TO_RUN.md) for details.
 
-## Description
+A web-based dungeon-crawling JRPG built with **Vite + TypeScript + Babylon.js**.
+Inspired by Crimson Shroud — every mechanic is dice, status, and strategy.
 
-A web-based tabletop JRPG engine inspired by Crimson Shroud, built with:
-- **Vite** + **TypeScript** + **Babylon.js**
-- Finite state machine architecture (TITLE → MAP → EVENT → COMBAT → REWARD → MAP)
-- Separation of pure rules logic from rendering
-- Data-driven content system
+---
 
 ## Quick Start
 
 ```bash
-# 1. Clone and install
-git clone <repo-url>
-cd DungeonRoll
 npm install
-
-# 2. Run development server (recommended)
-npm run dev
-# Opens at http://localhost:5173/
-
-# OR: Build and preview production
-npm run build
-npm run preview
-# Opens at http://localhost:4173/
+npm run dev          # http://localhost:5173
 ```
 
-**Note:** The dev server runs on port **5173**, not 3000.
+Or build for production:
 
-See [HOW_TO_RUN.md](HOW_TO_RUN.md) for detailed instructions and troubleshooting.
+```bash
+npm run build
+npm run preview      # http://localhost:4173
+```
 
-## Live Demo
-You can see this repository live here:
-https://babylonjs-vite-boilerplate.vercel.app/
+---
 
-## Production build
-First `npm run build`
-A `dist` folder is created and contains the distribution. 
-You can `npm run preview` it on your development machine.
-Production preview runs at http://localhost:5000/ . The terminal will display external URLs if you want to test from a phone or tablet.
+## Gameplay
+
+1. **Party Select** — Choose 3 of 5 classes (Knight, Mage, Ranger, Cleric, Rogue).
+2. **Dungeon Map** — Navigate a 12-room branching dungeon. Choose your path at crossroads.
+   - Rest to recover HP/MP (costs gold)
+   - Manage equipment drops
+   - Use items from inventory
+   - Click a party member to inspect full stats and skills
+3. **Event Screen** — Preview enemies before committing to fight.
+4. **Combat** — Turn-based, speed-ordered. Choose Attack / Guard / Skill / Item each turn.
+   - 30 skills across 5 classes (damage, heal, AoE, buffs, status effects)
+   - Enemy AI with 7 roles: basic, tank, bruiser, caster, healer, sniper, boss
+   - Status effects: poison, stun, buff, weaken, shield, regen
+5. **Reward** — XP, gold, item drops, equipment drops, level-up details.
+6. **Repeat** — Clear all rooms to beat the dungeon. Party wipe = run over.
+
+---
+
+## Features
+
+### Engine
+- Finite state machine: `TITLE → MAP → EVENT → COMBAT → REWARD → MAP` (or `DEFEAT`)
+- Pure rules layer with zero Babylon imports — combat engine is fully testable in Node
+- Data-driven content: all enemies, skills, items, equipment, and rooms are JSON
+
+### Combat
+- Speed-based turn order (higher speed acts first)
+- Armor reduces flat damage; guarding doubles armor for that hit
+- Skills cost MP; targeting types: single enemy, all enemies, single ally, all allies, self
+- Items usable in combat (potions restore HP/MP, tonics buff ATK, antidotes cure status)
+- Dead enemies yield XP and gold; dead party members stay dead for the run
+
+### Progression
+- 5 classes, each with unique base stats, growth rates, and learnable skill trees
+- XP split equally among surviving party members
+- Level-up grants stat growth and may unlock new skills
+- 31 equipment pieces across weapon/armor/accessory slots, 3 rarities, with class restrictions
+- Equipment bonuses apply/remove cleanly on equip/unequip from the map screen
+
+### Dungeon
+- 12 rooms in a directed acyclic graph (DAG) — multiple paths to the final boss
+- Multi-encounter rooms (some rooms have 2 waves; clear both to advance)
+- Encounter difficulty rating (Easy / Medium / Hard / Deadly) based on level delta and HP
+- SVG minimap with fog-of-war: visited (green), current (orange), available (amber), unknown
+
+### Content
+| Category | Count |
+|---|---|
+| Playable classes | 5 |
+| Enemy types | 26 |
+| Skills | 30 |
+| Equipment pieces | 31 |
+| Dungeon rooms | 12 |
+| Enemy AI roles | 7 |
+
+---
 
 ## File Structure
 
 ```
 src/
-  main.ts              # Entry point - initializes engine, scene, UI, and game
+  main.ts                      # Entry point — init engine, scene, session
   game/
-    Game.ts            # Pure game logic orchestrator (no Babylon dependencies)
-    stateMachine.ts    # Finite state machine implementation
+    Game.ts                    # State machine orchestrator
+    stateMachine.ts            # FSM: TITLE / MAP / EVENT / COMBAT / REWARD / DEFEAT
+    session/
+      GameSession.ts           # Run state — wires all screens, handles transitions
+  rules/
+    types.ts                   # Pure types: Character, Enemy, StatusEffect, etc.
+    combat.ts                  # Turn-based combat engine (no Babylon imports)
+    enemyAI.ts                 # 7 AI roles with targeting and behavior trees
+    leveling.ts                # XP award and level-up stat/skill growth
+    log.ts                     # Combat event log
+    dice.ts                    # Dice roller: NdM+K expression parser
   render/
-    createScene.ts     # Babylon.js scene setup (diorama board)
+    createScene.ts             # Babylon.js scene: diorama board, lighting, camera
+    CombatRenderer.ts          # Unit meshes, attack animations, spell particles
   ui/
-    createUI.ts        # DOM-based UI overlay
+    createCombatUI.ts          # In-combat DOM overlay: HP bars, skill buttons, log
+    CombatUIController.ts      # Bridges combat engine ↔ UI ↔ renderer
+    screens/
+      MainMenuScreen.ts        # Title / new game
+      PartySelectScreen.ts     # Class picker (choose 3 of 5)
+      DungeonMapScreen.ts      # Between-combat hub: minimap, party, equipment
+      EventScreen.ts           # Pre-combat room preview
+      RewardScreen.ts          # Post-combat XP / loot / level-up
+      DefeatScreen.ts          # Run-over summary
+      CharacterDetailPanel.ts  # Per-character stats, equipment, and skills overlay
+      InventoryScreen.ts       # Out-of-combat item use with target selection
   content/
-    *.json             # Data-driven content (enemies, skills, items, rooms)
+    loaders/
+      index.ts                 # Content loader and character factory
+      types.ts                 # Content type definitions
+    classes.json               # 5 class templates (stats, growth, skills)
+    enemies.json               # 26 enemy templates (AI role, stats, skills, drops)
+    skills.json                # 30 skills with targeting, damage, and status effects
+    items.json                 # Consumable items
+    equipment.json             # 31 equipment pieces with rarity and class restrictions
+    rooms.json                 # 12 rooms with branching connections and drop tables
+    encounters.json            # Encounter wave definitions per room
 ```
 
-## Features
+---
 
-### Phase 1: Foundation ✓
-- ✓ Babylon.js scene with diorama board (ground + lighting + isometric camera)
-- ✓ Finite state machine (TITLE → MAP → EVENT → COMBAT → REWARD → MAP)
-- ✓ UI overlay showing current state
-- ✓ "Advance State" button to cycle through states
-- ✓ Clean separation: rules engine never imports Babylon
-- ✓ Ready for data-driven content in `/src/content/`
+## Architecture Notes
 
-### Phase 2: Rules Engine ✓
-- ✓ Dice rolling system (d4-d20, NdM+K expressions like "2d6+3")
-- ✓ Combat engine (3 party vs 1 enemy)
-- ✓ Actions: Attack, Guard
-- ✓ Armor reduces damage by flat amount (doubled when guarding)
-- ✓ Combat logging system
-- ✓ Status effects framework
-- ✓ Test harness for console testing
+- **No circular imports**: `rules/` → `types.ts` only. `render/` and `ui/` import from `rules/` but not vice-versa.
+- **Synchronous state dispatch**: `game.dispatch()` calls `onStateChangeCallback` synchronously. Screen state reads happen before any resets — see `GameSession.onCombatEnd` defeat path.
+- **Equipment bonuses**: Applied to live stats on equip, reversed on unequip. The truthiness guard (`if (bonus)`) means 0-value entries are skipped — all current equipment has nonzero bonuses.
+- **Attack item buff cap**: `Character.attackBuff` tracks cumulative item-granted ATK. Capped at +20 per run to prevent strength-tonic stacking.
 
-### Phase 3: Combat UI ✓
-- ✓ Interactive combat screen with party/enemy HP displays
-- ✓ Color-coded HP bars (green → yellow → red)
-- ✓ Attack, Guard, and End Turn buttons
-- ✓ Scrolling combat log
-- ✓ Simple enemy AI (random targeting)
-- ✓ Victory/defeat detection
-- ✓ Visual guard indicators (🛡️)
+---
 
 ## Troubleshooting
 
-### Blank white/black screen?
-
-1. **Check browser console** (F12 → Console tab)
-   - Look for JavaScript errors
-   - Should see "Loading Dungeon Roll..." and initialization logs
-
-2. **Try development mode**: `npm run dev`
-   - Opens at http://localhost:5173/
-   - Provides better error messages
-
-3. **Check the console logs**:
-   ```
-   DOMContentLoaded event fired
-   Canvas element found
-   Babylon engine initialized
-   Game initialized
-   Combat UI ready!
-   ```
-
-4. **If you see errors**, common fixes:
-   - Clear browser cache
-   - Try a different browser
-   - Check console for specific error messages
-
-### Testing in console
-
-```javascript
-runCombatTest()     // Run automated combat test
-combat.show()       // Show combat UI
-combat.hide()       // Hide combat UI
-combat.enemyTurn()  // Trigger enemy attack manually
-```
-
-## Thank you!
-
-Thank you for using it, feel free to contribute in any way you can/want, just keep in mind that this should stay as a very mimimalistic boilerplate. 
-If you'd like to add complexity just fork it and let me know when you're done, so that I might reference it here in case someone comes looking for a more opinionated environment.
-
-Enjoy!
+| Symptom | Fix |
+|---|---|
+| Blank screen | Use `npm run dev`, not `index.html` directly (CORS) |
+| Console errors on start | Check `src/content/*.json` for malformed data |
+| Port conflict | Vite auto-selects the next available port |
+| Black 3D viewport | WebGL may be disabled; try Chrome or Firefox |

@@ -120,6 +120,7 @@ export function createCharacterFromClass(
     attack: classTemplate.baseAttack,
     armor: classTemplate.baseArmor,
     speed: classTemplate.baseSpeed,
+    attackBuff: 0,
     level: 1,
     xp: 0,
     xpToNext: calculateXpToNext(1),

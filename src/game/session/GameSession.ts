@@ -395,7 +395,7 @@ export class GameSession {
 
   private showEventScreen(): void {
     const room = this.content.rooms.get(this.currentRoomId);
-    if (!room) return;
+    if (!room || room.encounters.length === 0) return;
 
     const encounterIndex = this.currentEncounterIndex % room.encounters.length;
     const encounter = room.encounters[encounterIndex];
@@ -421,6 +421,10 @@ export class GameSession {
     const room = this.content.rooms.get(this.currentRoomId);
     if (!room) {
       console.error('No room found for current id:', this.currentRoomId);
+      return;
+    }
+    if (room.encounters.length === 0) {
+      console.error('Room has no encounters:', this.currentRoomId);
       return;
     }
 
@@ -757,9 +761,15 @@ export class GameSession {
       case 'mp_restore':
         char.mp = Math.min(char.maxMp, char.mp + tmpl.effect.value);
         break;
-      case 'buff':
-        char.attack += tmpl.effect.value;
+      case 'buff': {
+        // Cap total item-granted attack buff at 20 to prevent infinite stacking
+        const MAX_ITEM_ATTACK_BUFF = 20;
+        const available = Math.max(0, MAX_ITEM_ATTACK_BUFF - char.attackBuff);
+        const gain = Math.min(tmpl.effect.value, available);
+        char.attack += gain;
+        char.attackBuff += gain;
         break;
+      }
       case 'cure_status':
         char.statuses = [];
         break;
