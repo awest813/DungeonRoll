@@ -515,14 +515,12 @@ export function createCombatUI(): CombatUI {
       } else {
         const num = parseInt(key);
         if (num >= 1 && num <= currentSkills.length) {
-          const skillBtns = document.querySelectorAll('.skill-btn:not([disabled])');
-          // Find the nth enabled skill button
-          let enabledIdx = 0;
-          for (let si = 0; si < currentSkills.length; si++) {
-            if (currentMp >= currentSkills[si].mpCost) {
-              enabledIdx++;
-              if (si === num - 1) { (skillBtns[si] as HTMLElement)?.click(); e.preventDefault(); break; }
-            }
+          const skill = currentSkills[num - 1];
+          if (skill && currentMp >= skill.mpCost) {
+            // Click the button matching this skill's position (all buttons, including disabled)
+            const allSkillBtns = document.querySelectorAll('.skill-btn');
+            (allSkillBtns[num - 1] as HTMLElement)?.click();
+            e.preventDefault();
           }
         }
       }
