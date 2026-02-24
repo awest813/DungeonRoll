@@ -703,6 +703,40 @@ export class CombatRenderer {
     }
   }
 
+  updateStatusVisuals(id: string, statuses: string[]): void {
+    const unitMesh = this.unitMeshes.get(id);
+    if (!unitMesh || !unitMesh.alive) return;
+
+    const bodyPart = unitMesh.bodyParts.find(p => p.name.startsWith('body_'));
+    if (!bodyPart) return;
+    const mat = bodyPart.material as BABYLON.StandardMaterial;
+    if (!mat) return;
+
+    // Don't override guard glow
+    if (statuses.length === 0) {
+      mat.emissiveColor = unitMesh.visual.emissive.clone();
+      return;
+    }
+
+    // Priority: poisoned (green) > stunned (yellow) > weakened (dark red) > buffed (gold) > shielded (blue) > regen (bright green)
+    const statusStr = statuses.join(' ');
+    if (statusStr.includes('PSN')) {
+      mat.emissiveColor = new BABYLON.Color3(0.05, 0.25, 0.05);
+    } else if (statusStr.includes('STN')) {
+      mat.emissiveColor = new BABYLON.Color3(0.25, 0.2, 0.0);
+    } else if (statusStr.includes('WEK')) {
+      mat.emissiveColor = new BABYLON.Color3(0.25, 0.05, 0.05);
+    } else if (statusStr.includes('BUF')) {
+      mat.emissiveColor = new BABYLON.Color3(0.2, 0.18, 0.05);
+    } else if (statusStr.includes('SHD')) {
+      mat.emissiveColor = new BABYLON.Color3(0.05, 0.1, 0.25);
+    } else if (statusStr.includes('RGN')) {
+      mat.emissiveColor = new BABYLON.Color3(0.05, 0.2, 0.1);
+    } else {
+      mat.emissiveColor = unitMesh.visual.emissive.clone();
+    }
+  }
+
   playAttackAnimation(attackerId: string, targetId: string, onComplete?: () => void): void {
     const attackerMesh = this.unitMeshes.get(attackerId);
     const targetMesh = this.unitMeshes.get(targetId);

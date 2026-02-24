@@ -135,7 +135,7 @@ export function createMainMenuScreen(): MainMenuScreen {
     color: #555;
     letter-spacing: 2px;
   `;
-  footer.textContent = 'v0.2.0';
+  footer.textContent = 'v0.3.0';
 
   container.appendChild(topDecor);
   container.appendChild(titleBlock);

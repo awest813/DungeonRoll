@@ -1,7 +1,14 @@
 // Defeat / game over screen
 
+export interface DefeatData {
+  roomsCleared: number;
+  totalRooms: number;
+  goldEarned: number;
+  roomName: string;
+}
+
 export interface DefeatScreen {
-  show(): void;
+  show(data?: DefeatData): void;
   hide(): void;
   destroy(): void;
   onReturnToTitle(callback: () => void): void;
@@ -49,13 +56,13 @@ export function createDefeatScreen(): DefeatScreen {
 
   const body = document.createElement('div');
   body.style.cssText = `padding: 30px 24px;`;
-  body.innerHTML = `
-    <div style="font-size: 14px; color: #aaa; margin-bottom: 8px; line-height: 1.6;">
-      The dungeon has claimed another party...
-    </div>
-    <div style="font-size: 13px; color: #888; margin-bottom: 30px;">
-      But heroes never stay down for long.
-    </div>
+
+  const bodyContent = document.createElement('div');
+  bodyContent.id = 'defeat-body-content';
+
+  const btnContainer = document.createElement('div');
+  btnContainer.style.cssText = `text-align: center; margin-top: 24px;`;
+  btnContainer.innerHTML = `
     <button id="return-title-btn" style="
       width: 260px;
       padding: 16px 32px;
@@ -73,6 +80,8 @@ export function createDefeatScreen(): DefeatScreen {
     ">Return to Title</button>
   `;
 
+  body.appendChild(bodyContent);
+  body.appendChild(btnContainer);
   panel.appendChild(header);
   panel.appendChild(body);
   container.appendChild(panel);
@@ -98,8 +107,51 @@ export function createDefeatScreen(): DefeatScreen {
     });
   }
 
+  function renderBody(data?: DefeatData) {
+    if (data) {
+      bodyContent.innerHTML = `
+        <div style="font-size: 14px; color: #aaa; margin-bottom: 16px; line-height: 1.6;">
+          Your party fell in <span style="color: #f44336; font-weight: bold;">${data.roomName}</span>
+        </div>
+        <div style="display: flex; gap: 16px; margin-bottom: 20px;">
+          <div style="
+            flex: 1; text-align: center; padding: 12px;
+            background: rgba(244, 67, 54, 0.1);
+            border: 1px solid rgba(244, 67, 54, 0.3);
+            border-radius: 6px;
+          ">
+            <div style="font-size: 10px; color: #e88; letter-spacing: 2px; margin-bottom: 4px;">ROOMS CLEARED</div>
+            <div style="font-size: 24px; font-weight: bold; color: #ef9a9a;">${data.roomsCleared} / ${data.totalRooms}</div>
+          </div>
+          <div style="
+            flex: 1; text-align: center; padding: 12px;
+            background: rgba(255, 200, 0, 0.08);
+            border: 1px solid rgba(255, 215, 0, 0.3);
+            border-radius: 6px;
+          ">
+            <div style="font-size: 10px; color: #FFD54F; letter-spacing: 2px; margin-bottom: 4px;">GOLD COLLECTED</div>
+            <div style="font-size: 24px; font-weight: bold; color: #FFE082;">${data.goldEarned}</div>
+          </div>
+        </div>
+        <div style="font-size: 13px; color: #888;">
+          But heroes never stay down for long.
+        </div>
+      `;
+    } else {
+      bodyContent.innerHTML = `
+        <div style="font-size: 14px; color: #aaa; margin-bottom: 8px; line-height: 1.6;">
+          The dungeon has claimed another party...
+        </div>
+        <div style="font-size: 13px; color: #888;">
+          But heroes never stay down for long.
+        </div>
+      `;
+    }
+  }
+
   return {
-    show() {
+    show(data?: DefeatData) {
+      renderBody(data);
       container.style.display = 'flex';
     },
     hide() {

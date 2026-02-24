@@ -205,7 +205,16 @@ export class CombatUIController {
 
   startTurn() {
     this.combat.startTurn();
+    // Update 3D HP bars after poison/regen ticks
+    if (this.renderer) {
+      this.party.forEach(c => this.renderer!.updateUnitHP(c.id, c.hp, c.maxHp));
+      this.enemies.forEach(e => this.renderer!.updateUnitHP(e.id, e.hp, e.maxHp));
+    }
     this.refresh();
+    // Poison/regen can kill — check if combat ended
+    if (this.combat.isOver()) {
+      this.checkCombatEnd();
+    }
   }
 
   private enemyTurn() {
@@ -331,9 +340,15 @@ export class CombatUIController {
     if (this.renderer) {
       this.party.forEach(char => {
         this.renderer!.playGuardAnimation(char.id, char.isGuarding);
+        if (!char.isGuarding) {
+          this.renderer!.updateStatusVisuals(char.id, char.statuses.map(s => STATUS_LABELS[s.type] ?? s.type));
+        }
       });
       this.enemies.forEach(enemy => {
         this.renderer!.playGuardAnimation(enemy.id, enemy.isGuarding);
+        if (!enemy.isGuarding) {
+          this.renderer!.updateStatusVisuals(enemy.id, enemy.statuses.map(s => STATUS_LABELS[s.type] ?? s.type));
+        }
       });
     }
 

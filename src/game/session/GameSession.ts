@@ -13,7 +13,7 @@ import { awardXp, LevelUpResult } from '../../rules/leveling';
 import { createMainMenuScreen, MainMenuScreen } from '../../ui/screens/MainMenuScreen';
 import { createDungeonMapScreen, DungeonMapScreen, DungeonRoomInfo } from '../../ui/screens/DungeonMapScreen';
 import { createRewardScreen, RewardScreen, RewardData, RewardLevelUp } from '../../ui/screens/RewardScreen';
-import { createDefeatScreen, DefeatScreen } from '../../ui/screens/DefeatScreen';
+import { createDefeatScreen, DefeatScreen, DefeatData } from '../../ui/screens/DefeatScreen';
 import { createPartySelectScreen, PartySelectScreen, PartyClassInfo } from '../../ui/screens/PartySelectScreen';
 import { createEventScreen, EventScreen } from '../../ui/screens/EventScreen';
 
@@ -195,9 +195,17 @@ export class GameSession {
       case 'REWARD':
         this.showRewardScreen();
         break;
-      case 'DEFEAT':
-        this.defeatScreen.show();
+      case 'DEFEAT': {
+        const room = this.getCurrentRoom();
+        const defeatData: DefeatData = {
+          roomsCleared: this.currentRoomIndex,
+          totalRooms: DUNGEON_ORDER.length,
+          goldEarned: this.gold,
+          roomName: room?.name ?? 'Unknown',
+        };
+        this.defeatScreen.show(defeatData);
         break;
+      }
     }
   }
 

@@ -272,8 +272,12 @@ export function createCombatUI(): CombatUI {
             <div style="font-size: 10px; color: #999; margin-bottom: 4px; letter-spacing: 1px;">TARGET ALLY:</div>
             ${currentParty
               .map(
-                (char, index) => `
-                <button class="ally-select" data-index="${index}" style="${selectBtnStyle(selectedAllyTargetIndex === index, '#4CAF50', char.hp <= 0)}">${char.name}</button>`
+                (char, index) => {
+                  const hpPct = char.maxHp > 0 ? Math.round((char.hp / char.maxHp) * 100) : 0;
+                  const hpCol = hpPct > 50 ? '#4CAF50' : hpPct > 25 ? '#ffa500' : '#f44336';
+                  return `
+                <button class="ally-select" data-index="${index}" style="${selectBtnStyle(selectedAllyTargetIndex === index, '#4CAF50', char.hp <= 0)}">${char.name} <span style="color: ${char.hp > 0 ? hpCol : '#555'}; font-size: 9px;">${char.hp}/${char.maxHp}</span></button>`;
+                }
               )
               .join('')}
           </div>`
@@ -311,8 +315,12 @@ export function createCombatUI(): CombatUI {
             <div style="font-size: 10px; color: #999; margin-bottom: 4px; letter-spacing: 1px;">USE ON:</div>
             ${currentParty
               .map(
-                (char, index) => `
-                <button class="item-target-select" data-index="${index}" style="${selectBtnStyle(selectedItemTargetIndex === index, '#E65100', char.hp <= 0)}">${char.name}</button>`
+                (char, index) => {
+                  const hpPct = char.maxHp > 0 ? Math.round((char.hp / char.maxHp) * 100) : 0;
+                  const hpCol = hpPct > 50 ? '#4CAF50' : hpPct > 25 ? '#ffa500' : '#f44336';
+                  return `
+                <button class="item-target-select" data-index="${index}" style="${selectBtnStyle(selectedItemTargetIndex === index, '#E65100', char.hp <= 0)}">${char.name} <span style="color: ${char.hp > 0 ? hpCol : '#555'}; font-size: 9px;">${char.hp}/${char.maxHp}</span></button>`;
+                }
               )
               .join('')}
           </div>`
@@ -593,9 +601,25 @@ export function createCombatUI(): CombatUI {
       } else if (message.startsWith('===')) {
         entry.style.cssText = `padding: 2px 0; color: #ffa500; font-weight: bold; font-size: 11px;`;
       } else if (message.startsWith('  ')) {
-        entry.style.cssText = `padding: 1px 0; color: #bbb; font-size: 10px; padding-left: 8px;`;
+        // Sub-messages: color by content
+        let color = '#bbb';
+        if (message.includes('defeated')) color = '#f44336';
+        else if (message.includes('recovers') || message.includes('regenerates')) color = '#66BB6A';
+        else if (message.includes('Critical hit')) color = '#FFD54F';
+        else if (message.includes('poison damage')) color = '#AB47BC';
+        else if (message.includes('is poisoned') || message.includes('is stunned') || message.includes('is weakened')) color = '#AB47BC';
+        else if (message.includes('is buffed') || message.includes('is shielded') || message.includes('gains')) color = '#64B5F6';
+        else if (message.includes('guard is broken')) color = '#FF8A65';
+        else if (message.includes('armor blocks')) color = '#78909C';
+        entry.style.cssText = `padding: 1px 0; color: ${color}; font-size: 10px; padding-left: 8px;`;
       } else {
-        entry.style.cssText = `padding: 1px 0; color: #ddd; font-size: 11px;`;
+        // Top-level messages
+        let color = '#ddd';
+        if (message.includes('uses') && !message.includes('no')) color = '#CE93D8';
+        else if (message.includes('attacks')) color = '#ef9a9a';
+        else if (message.includes('defensive stance')) color = '#64B5F6';
+        else if (message.includes('stunned and cannot')) color = '#AB47BC';
+        entry.style.cssText = `padding: 1px 0; color: ${color}; font-size: 11px;`;
       }
       entry.textContent = message;
       log.appendChild(entry);
