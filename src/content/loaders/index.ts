@@ -9,7 +9,7 @@ import { loadItems } from './itemsLoader';
 import { loadRooms } from './roomsLoader';
 import { loadSkills } from './skillsLoader';
 import { loadClasses } from './classesLoader';
-import { EncounterSetup, GameContent, PartyTemplate, EnemyTemplate } from './types';
+import { EncounterSetup, GameContent, PartyTemplate, EnemyTemplate, ClassTemplate } from './types';
 
 function toCharacter(member: PartyTemplate): Character {
   return {
@@ -116,5 +116,41 @@ export function createEncounterFromRoom(
     encounterId,
     party: room.party.map((member) => toCharacter(member)),
     enemies,
+  };
+}
+
+const DEFAULT_NAMES: Record<string, string> = {
+  knight: 'Sir Aldric',
+  mage: 'Elara',
+  ranger: 'Finn',
+  cleric: 'Helena',
+  rogue: 'Shade',
+};
+
+export function createCharacterFromClass(
+  classTemplate: ClassTemplate,
+  index: number
+): Character {
+  return {
+    id: `party-${classTemplate.id}`,
+    name: DEFAULT_NAMES[classTemplate.id] ?? classTemplate.name,
+    characterClass: classTemplate.id,
+    hp: classTemplate.baseHp,
+    maxHp: classTemplate.baseHp,
+    mp: classTemplate.baseMp,
+    maxMp: classTemplate.baseMp,
+    attack: classTemplate.baseAttack,
+    armor: classTemplate.baseArmor,
+    speed: classTemplate.baseSpeed,
+    level: 1,
+    xp: 0,
+    xpToNext: calculateXpToNext(1),
+    isGuarding: false,
+    statuses: [],
+    skillIds: [...classTemplate.startingSkills],
+    inventory: [
+      { itemId: 'small-potion', quantity: 3 },
+      { itemId: 'ether', quantity: 1 },
+    ],
   };
 }

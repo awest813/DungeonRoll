@@ -21,6 +21,8 @@ export interface DungeonMapData {
   currentRoomIndex: number;
   party: DungeonPartyMember[];
   encounterPreview: string[];
+  gold: number;
+  restCost: number;
 }
 
 export interface DungeonMapScreen {
@@ -29,6 +31,7 @@ export interface DungeonMapScreen {
   destroy(): void;
   onEnterRoom(callback: () => void): void;
   onDungeonComplete(callback: () => void): void;
+  onRest(callback: () => void): void;
 }
 
 export function createDungeonMapScreen(): DungeonMapScreen {
@@ -80,6 +83,7 @@ export function createDungeonMapScreen(): DungeonMapScreen {
 
   let enterCallback: (() => void) | null = null;
   let dungeonCompleteCallback: (() => void) | null = null;
+  let restCallback: (() => void) | null = null;
 
   function render(data: DungeonMapData) {
     const currentRoom = data.rooms[data.currentRoomIndex];
@@ -180,6 +184,36 @@ export function createDungeonMapScreen(): DungeonMapScreen {
       `;
     }).join('');
 
+    // Gold & rest
+    const canRest = data.gold >= data.restCost && data.party.some(m => m.hp > 0 && (m.hp < m.maxHp || m.mp < m.maxMp));
+    const goldAndRest = `
+      <div style="
+        display: flex; align-items: center; justify-content: space-between;
+        padding: 10px 14px; margin-bottom: 16px;
+        background: rgba(255, 200, 0, 0.08);
+        border: 1px solid rgba(255, 215, 0, 0.3);
+        border-radius: 5px;
+      ">
+        <div>
+          <span style="font-size: 11px; color: #FFD54F; letter-spacing: 2px;">GOLD</span>
+          <span style="font-size: 20px; font-weight: bold; color: #FFE082; margin-left: 10px;">${data.gold}</span>
+        </div>
+        <button id="rest-btn" style="
+          padding: 8px 18px;
+          font-size: 12px;
+          font-family: 'Courier New', monospace;
+          font-weight: bold;
+          letter-spacing: 2px;
+          border: 1px solid ${canRest ? '#4CAF50' : '#555'};
+          border-radius: 4px;
+          background: ${canRest ? 'rgba(76, 175, 80, 0.15)' : 'rgba(40, 40, 40, 0.4)'};
+          color: ${canRest ? '#4CAF50' : '#666'};
+          cursor: ${canRest ? 'pointer' : 'not-allowed'};
+          transition: all 0.2s;
+        " ${canRest ? '' : 'disabled'}>REST (${data.restCost}g) +50% HP/MP</button>
+      </div>
+    `;
+
     // Encounter preview
     const encounterInfo = data.encounterPreview.length > 0
       ? `
@@ -248,6 +282,7 @@ export function createDungeonMapScreen(): DungeonMapScreen {
       ${progressBar}
       <div style="font-size: 12px; color: #aaa; letter-spacing: 2px; margin-bottom: 8px;">DUNGEON ROOMS</div>
       <div style="margin-bottom: 20px;">${roomList}</div>
+      ${goldAndRest}
       <div style="font-size: 12px; color: #aaa; letter-spacing: 2px; margin-bottom: 8px;">PARTY STATUS</div>
       ${partyStatus}
       ${encounterInfo}
@@ -287,6 +322,21 @@ export function createDungeonMapScreen(): DungeonMapScreen {
         if (dungeonCompleteCallback) dungeonCompleteCallback();
       });
     }
+
+    const restBtn = document.getElementById('rest-btn');
+    if (restBtn && canRest) {
+      restBtn.addEventListener('mouseenter', () => {
+        (restBtn as HTMLButtonElement).style.background = 'rgba(76, 175, 80, 0.3)';
+        (restBtn as HTMLButtonElement).style.boxShadow = '0 0 12px rgba(76, 175, 80, 0.2)';
+      });
+      restBtn.addEventListener('mouseleave', () => {
+        (restBtn as HTMLButtonElement).style.background = 'rgba(76, 175, 80, 0.15)';
+        (restBtn as HTMLButtonElement).style.boxShadow = 'none';
+      });
+      restBtn.addEventListener('click', () => {
+        if (restCallback) restCallback();
+      });
+    }
   }
 
   return {
@@ -305,6 +355,9 @@ export function createDungeonMapScreen(): DungeonMapScreen {
     },
     onDungeonComplete(callback) {
       dungeonCompleteCallback = callback;
+    },
+    onRest(callback) {
+      restCallback = callback;
     },
   };
 }

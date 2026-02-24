@@ -23,10 +23,16 @@ export interface RewardPartyMember {
   xpToNext: number;
 }
 
+export interface RewardItemDrop {
+  name: string;
+  quantity: number;
+}
+
 export interface RewardData {
   xpEarned: number;
   goldEarned: number;
   levelUps: RewardLevelUp[];
+  itemDrops: RewardItemDrop[];
   party: RewardPartyMember[];
   roomName: string;
 }
@@ -153,6 +159,30 @@ export function createRewardScreen(): RewardScreen {
       `;
     }
 
+    // Item drops
+    let itemDropsHtml = '';
+    if (data.itemDrops.length > 0) {
+      const dropEntries = data.itemDrops.map(drop => `
+        <span style="
+          display: inline-block;
+          padding: 5px 12px;
+          margin: 2px 4px;
+          background: rgba(206, 147, 216, 0.1);
+          border: 1px solid rgba(206, 147, 216, 0.4);
+          border-radius: 4px;
+          font-size: 12px;
+          color: #CE93D8;
+        ">${drop.name}${drop.quantity > 1 ? ` x${drop.quantity}` : ''}</span>
+      `).join('');
+
+      itemDropsHtml = `
+        <div style="margin-bottom: 20px;">
+          <div style="font-size: 12px; color: #CE93D8; letter-spacing: 2px; margin-bottom: 8px;">ITEMS FOUND</div>
+          <div style="display: flex; flex-wrap: wrap; gap: 2px;">${dropEntries}</div>
+        </div>
+      `;
+    }
+
     // Party status
     const partyHtml = data.party.map(member => {
       const hpPercent = (member.hp / member.maxHp) * 100;
@@ -194,6 +224,7 @@ export function createRewardScreen(): RewardScreen {
       </div>
       ${rewards}
       ${levelUpHtml}
+      ${itemDropsHtml}
       <div style="font-size: 12px; color: #aaa; letter-spacing: 2px; margin-bottom: 8px;">PARTY STATUS</div>
       ${partyHtml}
       <div style="text-align: center; margin-top: 24px;">

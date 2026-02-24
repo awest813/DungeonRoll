@@ -799,6 +799,95 @@ export class CombatRenderer {
     ps.start();
   }
 
+  // --- Floating damage/heal numbers ---
+
+  showDamageNumber(targetId: string, amount: number, type: 'damage' | 'heal' | 'miss'): void {
+    const unitMesh = this.unitMeshes.get(targetId);
+    if (!unitMesh || this.disposed) return;
+
+    const worldPos = unitMesh.mesh.position.clone();
+    const yOffset = unitMesh.visual.bodyHeight + unitMesh.visual.headDiameter + 0.6;
+    worldPos.y += yOffset;
+
+    // Create a plane billboard for the number
+    const label = BABYLON.MeshBuilder.CreatePlane(
+      `dmgNum_${Date.now()}`,
+      { width: 1.6, height: 0.5 },
+      this.scene
+    );
+    label.position = worldPos.clone();
+    label.billboardMode = BABYLON.Mesh.BILLBOARDMODE_ALL;
+
+    const texture = new BABYLON.DynamicTexture(
+      `dmgTex_${Date.now()}`,
+      { width: 256, height: 64 },
+      this.scene,
+      false
+    );
+    const mat = new BABYLON.StandardMaterial(`dmgMat_${Date.now()}`, this.scene);
+    mat.diffuseTexture = texture;
+    mat.diffuseTexture.hasAlpha = true;
+    mat.useAlphaFromDiffuseTexture = true;
+    mat.emissiveColor = new BABYLON.Color3(1, 1, 1);
+    mat.disableLighting = true;
+    mat.backFaceCulling = false;
+    label.material = mat;
+
+    const ctx = texture.getContext() as CanvasRenderingContext2D;
+    ctx.clearRect(0, 0, 256, 64);
+
+    let text: string;
+    let color: string;
+    if (type === 'miss') {
+      text = 'MISS';
+      color = '#aaaaaa';
+    } else if (type === 'heal') {
+      text = `+${amount}`;
+      color = '#66ff66';
+    } else {
+      text = `-${amount}`;
+      color = amount >= 20 ? '#ff4444' : '#ffaa44';
+    }
+
+    ctx.font = `bold ${amount >= 20 || type === 'miss' ? 36 : 30}px Courier New`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    // Shadow
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+    ctx.fillText(text, 130, 34);
+    // Main text
+    ctx.fillStyle = color;
+    ctx.fillText(text, 128, 32);
+    texture.update();
+
+    // Animate: float up + fade out
+    const startY = worldPos.y;
+    const duration = 50;
+    let frame = 0;
+    const xDrift = (Math.random() - 0.5) * 0.4;
+
+    const animate = () => {
+      if (this.disposed || frame >= duration) {
+        label.dispose();
+        mat.dispose();
+        texture.dispose();
+        return;
+      }
+      const progress = frame / duration;
+      label.position.y = startY + progress * 1.5;
+      label.position.x = worldPos.x + xDrift * progress;
+      mat.alpha = 1.0 - progress * progress;
+      // Scale up slightly for big hits
+      if (type === 'damage' && amount >= 20) {
+        const scale = 1.0 + (1 - progress) * 0.3;
+        label.scaling = new BABYLON.Vector3(scale, scale, scale);
+      }
+      frame++;
+      requestAnimationFrame(animate);
+    };
+    animate();
+  }
+
   // --- Helpers ---
 
   private getVisualForUnit(unit: UnitMesh): ClassVisual {

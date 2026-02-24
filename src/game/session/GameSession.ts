@@ -7,13 +7,15 @@ import { createCombatUI, CombatUI } from '../../ui/createCombatUI';
 import { CombatUIController } from '../../ui/CombatUIController';
 import { CombatRenderer } from '../../render/CombatRenderer';
 import { GameContent, RoomTemplate } from '../../content/loaders/types';
-import { Character, Enemy } from '../../rules/types';
-import { createEncounterFromRoom } from '../../content/loaders';
+import { Character, Enemy, CharacterClass } from '../../rules/types';
+import { createEncounterFromRoom, createCharacterFromClass } from '../../content/loaders';
 import { awardXp, LevelUpResult } from '../../rules/leveling';
 import { createMainMenuScreen, MainMenuScreen } from '../../ui/screens/MainMenuScreen';
 import { createDungeonMapScreen, DungeonMapScreen, DungeonRoomInfo } from '../../ui/screens/DungeonMapScreen';
 import { createRewardScreen, RewardScreen, RewardData, RewardLevelUp } from '../../ui/screens/RewardScreen';
 import { createDefeatScreen, DefeatScreen } from '../../ui/screens/DefeatScreen';
+import { createPartySelectScreen, PartySelectScreen, PartyClassInfo } from '../../ui/screens/PartySelectScreen';
+import { createEventScreen, EventScreen } from '../../ui/screens/EventScreen';
 
 export interface GameSessionConfig {
   scene: BABYLON.Scene;
@@ -31,6 +33,8 @@ const DUNGEON_ORDER = [
   'dragon-lair',
 ];
 
+const REST_COST = 20;
+
 export class GameSession {
   private readonly game: Game;
   private readonly scene: BABYLON.Scene;
@@ -39,7 +43,9 @@ export class GameSession {
 
   // Screen UIs
   private mainMenu: MainMenuScreen;
+  private partySelectScreen: PartySelectScreen;
   private dungeonMap: DungeonMapScreen;
+  private eventScreen: EventScreen;
   private rewardScreen: RewardScreen;
   private defeatScreen: DefeatScreen;
   private combatUI?: CombatUI;
@@ -51,6 +57,7 @@ export class GameSession {
   private currentRoomIndex: number = 0;
   private currentEncounterIndex: number = 0;
   private pendingRewardData: RewardData | null = null;
+  private gold: number = 0;
 
   constructor(config: GameSessionConfig) {
     this.scene = config.scene;
@@ -63,7 +70,9 @@ export class GameSession {
 
     // Create screen UIs
     this.mainMenu = createMainMenuScreen();
+    this.partySelectScreen = createPartySelectScreen();
     this.dungeonMap = createDungeonMapScreen();
+    this.eventScreen = createEventScreen();
     this.rewardScreen = createRewardScreen();
     this.defeatScreen = createDefeatScreen();
 
@@ -72,17 +81,52 @@ export class GameSession {
 
   private wireScreenCallbacks(): void {
     this.mainMenu.onNewGame(() => {
-      this.startNewGame();
+      this.showPartySelect();
+    });
+
+    this.partySelectScreen.onConfirm((selectedClassIds) => {
+      this.partySelectScreen.hide();
+      // Create characters from selected class templates
+      this.persistentParty = selectedClassIds.map((classId, index) => {
+        const classTemplate = this.content.classes.get(classId as CharacterClass);
+        if (!classTemplate) throw new Error(`Unknown class: ${classId}`);
+        return createCharacterFromClass(classTemplate, index);
+      });
+      this.gold = 0;
+      this.currentRoomIndex = 0;
+      this.currentEncounterIndex = 0;
+      this.game.dispatch('START_RUN');
     });
 
     this.dungeonMap.onEnterRoom(() => {
-      // MAP -> EVENT -> COMBAT (auto-transition through EVENT)
+      // MAP -> EVENT (event screen shows narrative before combat)
       this.game.dispatch('ENTER_ROOM');
-      this.game.dispatch('RESOLVE_EVENT');
     });
 
     this.dungeonMap.onDungeonComplete(() => {
-      this.startNewGame();
+      this.persistentParty = null;
+      this.gold = 0;
+      this.currentRoomIndex = 0;
+      this.currentEncounterIndex = 0;
+      this.game.reset();
+    });
+
+    this.dungeonMap.onRest(() => {
+      if (this.gold >= REST_COST && this.persistentParty) {
+        this.gold -= REST_COST;
+        for (const char of this.persistentParty) {
+          if (char.hp > 0) {
+            char.hp = Math.min(char.maxHp, char.hp + Math.floor(char.maxHp * 0.5));
+            char.mp = Math.min(char.maxMp, char.mp + Math.floor(char.maxMp * 0.5));
+          }
+        }
+        this.showDungeonMap(); // refresh display
+      }
+    });
+
+    this.eventScreen.onProceed(() => {
+      // EVENT -> COMBAT
+      this.game.dispatch('RESOLVE_EVENT');
     });
 
     this.rewardScreen.onContinue(() => {
@@ -90,7 +134,11 @@ export class GameSession {
     });
 
     this.defeatScreen.onReturnToTitle(() => {
-      this.game.dispatch('START_RUN');
+      this.persistentParty = null;
+      this.gold = 0;
+      this.currentRoomIndex = 0;
+      this.currentEncounterIndex = 0;
+      this.game.reset();
     });
   }
 
@@ -102,14 +150,26 @@ export class GameSession {
     return this.game.getCurrentState();
   }
 
-  private startNewGame(): void {
-    this.persistentParty = null;
-    this.currentRoomIndex = 0;
-    this.currentEncounterIndex = 0;
-    this.pendingRewardData = null;
-    // Reset to TITLE first (works from any state), then advance to MAP
-    this.game.reset();
-    this.game.dispatch('START_RUN');
+  private showPartySelect(): void {
+    this.mainMenu.hide();
+    const classInfos: PartyClassInfo[] = [];
+    for (const [, cls] of this.content.classes) {
+      classInfos.push({
+        id: cls.id,
+        name: cls.name,
+        role: '',
+        hp: cls.baseHp,
+        mp: cls.baseMp,
+        attack: cls.baseAttack,
+        armor: cls.baseArmor,
+        speed: cls.baseSpeed,
+        skills: cls.startingSkills
+          .filter(id => id !== 'basic-attack')
+          .map(id => this.content.skills.get(id)?.name ?? id),
+        color: '',
+      });
+    }
+    this.partySelectScreen.show(classInfos);
   }
 
   private handleStateChange(state: GameState): void {
@@ -127,8 +187,7 @@ export class GameSession {
         this.showDungeonMap();
         break;
       case 'EVENT':
-        // Pass-through state: RESOLVE_EVENT is dispatched immediately after ENTER_ROOM
-        // No UI needed here since the transition to COMBAT happens synchronously
+        this.showEventScreen();
         break;
       case 'COMBAT':
         this.startCombatEncounter();
@@ -144,7 +203,9 @@ export class GameSession {
 
   private hideAllScreens(): void {
     this.mainMenu.hide();
+    this.partySelectScreen.hide();
     this.dungeonMap.hide();
+    this.eventScreen.hide();
     this.rewardScreen.hide();
     this.defeatScreen.hide();
     this.hideCombat();
@@ -176,7 +237,7 @@ export class GameSession {
     }
 
     // Build party data
-    const party = this.persistentParty ?? this.getDefaultParty();
+    const party = this.persistentParty ?? [];
 
     this.dungeonMap.show({
       rooms: this.getDungeonRoomInfos(),
@@ -191,14 +252,33 @@ export class GameSession {
         level: c.level,
       })),
       encounterPreview,
+      gold: this.gold,
+      restCost: REST_COST,
     });
   }
 
-  private getDefaultParty(): Character[] {
-    const firstRoom = this.content.rooms.get(DUNGEON_ORDER[0]);
-    if (!firstRoom) return [];
-    const setup = createEncounterFromRoom(this.content, firstRoom.id, firstRoom.encounters[0].id);
-    return setup.party;
+  private showEventScreen(): void {
+    const room = this.getCurrentRoom();
+    if (!room) return;
+
+    const encounterIndex = this.currentEncounterIndex % room.encounters.length;
+    const encounter = room.encounters[encounterIndex];
+    const encounterPreview: string[] = [];
+    if (encounter) {
+      for (const enemyId of encounter.enemyIds) {
+        const template = this.content.enemies.get(enemyId);
+        if (template) encounterPreview.push(template.name);
+      }
+    }
+
+    this.eventScreen.show({
+      roomName: room.name,
+      roomDescription: room.description,
+      encounterPreview,
+      roomIndex: this.currentRoomIndex,
+      totalRooms: DUNGEON_ORDER.length,
+      flavorText: '',
+    });
   }
 
   private getCurrentRoom(): RoomTemplate | null {
@@ -219,12 +299,9 @@ export class GameSession {
 
     const setup = createEncounterFromRoom(this.content, room.id, encounter.id);
 
-    // Use persistent party if available (carry HP/MP/XP between combats)
-    let party: Character[];
-    if (this.persistentParty) {
-      party = this.persistentParty;
-    } else {
-      party = setup.party;
+    // Use persistent party (carry HP/MP/XP between combats)
+    const party = this.persistentParty ?? setup.party;
+    if (!this.persistentParty) {
       this.persistentParty = party;
     }
 
@@ -271,7 +348,23 @@ export class GameSession {
       // Award XP and check for level ups
       const totalXp = enemies.reduce((sum, e) => sum + e.xpReward, 0);
       const totalGold = enemies.reduce((sum, e) => sum + e.goldReward, 0);
+      this.gold += totalGold;
       const levelUps = awardXp(party, totalXp, this.content.classes as any);
+
+      // Generate item drops
+      const itemDrops = this.generateItemDrops(enemies);
+      // Add dropped items to first alive party member's inventory
+      if (itemDrops.length > 0) {
+        const receiver = party.find(c => c.hp > 0) ?? party[0];
+        for (const drop of itemDrops) {
+          const existing = receiver.inventory.find(e => e.itemId === drop.itemId);
+          if (existing) {
+            existing.quantity += drop.quantity;
+          } else {
+            receiver.inventory.push({ itemId: drop.itemId, quantity: drop.quantity });
+          }
+        }
+      }
 
       // Prepare reward data for the reward screen
       const rewardLevelUps: RewardLevelUp[] = levelUps.map((lu: LevelUpResult) => ({
@@ -290,6 +383,7 @@ export class GameSession {
         xpEarned: totalXp,
         goldEarned: totalGold,
         levelUps: rewardLevelUps,
+        itemDrops: itemDrops.map(d => ({ name: d.name, quantity: d.quantity })),
         party: party.map(c => ({
           name: c.name,
           hp: c.hp,
@@ -303,8 +397,7 @@ export class GameSession {
         roomName: room.name,
       };
 
-      // Clear combat-only status effects (poison, buffs, debuffs) between encounters
-      // Keep HP/MP as-is (persistent damage between rooms)
+      // Clear combat-only status effects between encounters
       for (const char of party) {
         char.statuses = [];
         char.isGuarding = false;
@@ -325,6 +418,51 @@ export class GameSession {
       this.currentEncounterIndex = 0;
       this.game.dispatch('LOSE_COMBAT');
     }
+  }
+
+  private generateItemDrops(enemies: Enemy[]): { itemId: string; name: string; quantity: number }[] {
+    const drops = new Map<string, number>();
+
+    const addDrop = (itemId: string, qty: number) => {
+      drops.set(itemId, (drops.get(itemId) ?? 0) + qty);
+    };
+
+    for (const enemy of enemies) {
+      const n = enemy.name.toLowerCase();
+
+      // Common enemies drop basic supplies
+      if (n.includes('goblin') || n.includes('wolf') || n.includes('bat')) {
+        if (Math.random() < 0.3) addDrop('small-potion', 1);
+      }
+
+      // Magic enemies drop MP restoration
+      if (n.includes('mage') || n.includes('shaman') || n.includes('sorcerer') || n.includes('necromancer')) {
+        if (Math.random() < 0.4) addDrop('ether', 1);
+      }
+
+      // Undead drop antidotes (they often poison)
+      if (n.includes('skeleton') || n.includes('undead') || n.includes('lich')) {
+        if (Math.random() < 0.2) addDrop('antidote', 1);
+      }
+
+      // Boss-tier enemies (high HP) drop better items
+      if (enemy.maxHp >= 60) {
+        if (Math.random() < 0.5) addDrop('medium-potion', 1);
+        if (Math.random() < 0.25) addDrop('strength-tonic', 1);
+      }
+
+      // Dragon drops premium items
+      if (n.includes('dragon')) {
+        if (Math.random() < 0.6) addDrop('large-potion', 1);
+        if (Math.random() < 0.4) addDrop('mega-ether', 1);
+      }
+    }
+
+    return Array.from(drops.entries()).map(([itemId, quantity]) => ({
+      itemId,
+      name: this.content.items.get(itemId)?.name ?? itemId,
+      quantity,
+    }));
   }
 
   private showRewardScreen(): void {

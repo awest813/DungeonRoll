@@ -75,9 +75,13 @@ export class CombatUIController {
             actorId: hero.id,
             targetId: target.id,
           });
-          if (target.hp < hpBefore) {
+          const damage = hpBefore - target.hp;
+          if (damage > 0) {
             this.renderer!.playHitAnimation(target.id);
             this.renderer!.updateUnitHP(target.id, target.hp, target.maxHp);
+            this.renderer!.showDamageNumber(target.id, damage, 'damage');
+          } else {
+            this.renderer!.showDamageNumber(target.id, 0, 'miss');
           }
           this.refresh();
           this.checkCombatEnd();
@@ -125,6 +129,10 @@ export class CombatUIController {
         targetId = hero.id;
       }
 
+      // Snapshot HP before skill
+      const enemyHpBefore = new Map(this.enemies.map(e => [e.id, e.hp]));
+      const partyHpBefore = new Map(this.party.map(c => [c.id, c.hp]));
+
       this.combat.executeAction({
         type: 'skill',
         actorId: hero.id,
@@ -135,9 +143,22 @@ export class CombatUIController {
       if (this.renderer) {
         this.enemies.forEach(e => {
           this.renderer!.updateUnitHP(e.id, e.hp, e.maxHp);
+          const before = enemyHpBefore.get(e.id) ?? e.hp;
+          const diff = before - e.hp;
+          if (diff > 0) {
+            this.renderer!.playHitAnimation(e.id);
+            this.renderer!.showDamageNumber(e.id, diff, 'damage');
+          }
         });
         this.party.forEach(c => {
           this.renderer!.updateUnitHP(c.id, c.hp, c.maxHp);
+          const before = partyHpBefore.get(c.id) ?? c.hp;
+          const diff = c.hp - before;
+          if (diff > 0) {
+            this.renderer!.showDamageNumber(c.id, diff, 'heal');
+          } else if (diff < 0) {
+            this.renderer!.showDamageNumber(c.id, -diff, 'damage');
+          }
         });
       }
       this.refresh();
@@ -205,6 +226,7 @@ export class CombatUIController {
 
       if (availableSkills.length > 0 && Math.random() < 0.4) {
         const skill = availableSkills[Math.floor(Math.random() * availableSkills.length)]!;
+        const partyHpSnapshot = new Map(this.party.map(c => [c.id, c.hp]));
         this.combat.executeAction({
           type: 'skill',
           actorId: enemy.id,
@@ -214,6 +236,12 @@ export class CombatUIController {
         if (this.renderer) {
           this.party.forEach(c => {
             this.renderer!.updateUnitHP(c.id, c.hp, c.maxHp);
+            const before = partyHpSnapshot.get(c.id) ?? c.hp;
+            const diff = before - c.hp;
+            if (diff > 0) {
+              this.renderer!.playHitAnimation(c.id);
+              this.renderer!.showDamageNumber(c.id, diff, 'damage');
+            }
           });
         }
         this.refresh();
@@ -227,9 +255,13 @@ export class CombatUIController {
               actorId: enemy.id,
               targetId: target.id,
             });
-            if (target.hp < hpBefore) {
+            const damage = hpBefore - target.hp;
+            if (damage > 0) {
               this.renderer!.playHitAnimation(target.id);
               this.renderer!.updateUnitHP(target.id, target.hp, target.maxHp);
+              this.renderer!.showDamageNumber(target.id, damage, 'damage');
+            } else {
+              this.renderer!.showDamageNumber(target.id, 0, 'miss');
             }
             if (!target.isGuarding && this.renderer) {
               this.renderer.playGuardAnimation(target.id, false);
