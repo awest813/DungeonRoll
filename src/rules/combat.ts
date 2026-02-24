@@ -159,13 +159,13 @@ export class CombatEngine {
       return;
     }
 
-    actor.mp -= skill.mpCost;
-
     const targets = this.resolveSkillTargets(actor, skill, targetId);
     if (targets.length === 0) {
-      this.log.add(`${actor.name} uses ${skill.name} but there are no valid targets!`);
+      this.log.add(`${actor.name} tries to use ${skill.name} but there are no valid targets!`);
       return;
     }
+
+    actor.mp -= skill.mpCost;
 
     this.log.add(`${actor.name} uses ${skill.name}!${skill.mpCost > 0 ? ` (${skill.mpCost} MP)` : ''}`);
 
@@ -262,6 +262,11 @@ export class CombatEngine {
     const target = targetId ? this.findCombatant(targetId) : actor;
     if (!target) {
       this.log.add(`Target not found!`);
+      return;
+    }
+
+    if (target.hp <= 0 && item.effect.type !== 'damage') {
+      this.log.add(`${target.name} is defeated and cannot be helped!`);
       return;
     }
 
@@ -396,6 +401,17 @@ export class CombatEngine {
   startTurn(): void {
     this.state.turnNumber++;
     this.log.addTurnStart(this.state.turnNumber);
+    // Clear guard at start of each turn - guard only lasts one round
+    for (const c of this.state.party) {
+      if (c.isGuarding) {
+        c.isGuarding = false;
+      }
+    }
+    for (const e of this.state.enemies) {
+      if (e.isGuarding) {
+        e.isGuarding = false;
+      }
+    }
     this.processStatusEffects();
   }
 

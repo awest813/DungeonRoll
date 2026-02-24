@@ -172,12 +172,29 @@ export class CombatUIController {
       // Prefer selected target but fall back to caster if target is dead
       const targetCandidate = this.party[targetIndex];
       const targetId = (targetCandidate && targetCandidate.hp > 0) ? targetCandidate.id : hero.id;
+
+      // Snapshot HP for floating numbers
+      const hpBefore = new Map(this.party.map(c => [c.id, c.hp]));
+
       this.combat.executeAction({
         type: 'item',
         actorId: hero.id,
         itemId,
         targetId,
       });
+
+      if (this.renderer) {
+        this.party.forEach(c => {
+          this.renderer!.updateUnitHP(c.id, c.hp, c.maxHp);
+          const before = hpBefore.get(c.id) ?? c.hp;
+          const diff = c.hp - before;
+          if (diff > 0) {
+            this.renderer!.showDamageNumber(c.id, diff, 'heal');
+          } else if (diff < 0) {
+            this.renderer!.showDamageNumber(c.id, -diff, 'damage');
+          }
+        });
+      }
       this.refresh();
     });
 
