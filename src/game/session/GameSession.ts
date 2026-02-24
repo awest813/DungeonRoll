@@ -81,6 +81,10 @@ export class GameSession {
       this.game.dispatch('RESOLVE_EVENT');
     });
 
+    this.dungeonMap.onDungeonComplete(() => {
+      this.startNewGame();
+    });
+
     this.rewardScreen.onContinue(() => {
       this.game.dispatch('CLAIM_REWARD');
     });
@@ -103,6 +107,8 @@ export class GameSession {
     this.currentRoomIndex = 0;
     this.currentEncounterIndex = 0;
     this.pendingRewardData = null;
+    // Reset to TITLE first (works from any state), then advance to MAP
+    this.game.reset();
     this.game.dispatch('START_RUN');
   }
 
@@ -119,6 +125,10 @@ export class GameSession {
         break;
       case 'MAP':
         this.showDungeonMap();
+        break;
+      case 'EVENT':
+        // Pass-through state: RESOLVE_EVENT is dispatched immediately after ENTER_ROOM
+        // No UI needed here since the transition to COMBAT happens synchronously
         break;
       case 'COMBAT':
         this.startCombatEncounter();

@@ -107,7 +107,7 @@ export class CombatUIController {
       this.refresh();
     });
 
-    this.ui.onSkill((heroIndex, skillId, targetIndex, _isAlly) => {
+    this.ui.onSkill((heroIndex, skillId, targetIndex, isAlly) => {
       const hero = this.party[heroIndex];
       if (!hero || hero.hp <= 0) return;
 
@@ -118,8 +118,9 @@ export class CombatUIController {
       if (skill.targeting === 'single_enemy') {
         targetId = this.enemies[targetIndex]?.id;
       } else if (skill.targeting === 'single_ally') {
-        // Target the selected hero (self-heal or ally-buff)
-        targetId = this.party[heroIndex]?.id;
+        // Use the selected ally target (passed as targetIndex when isAlly=true)
+        const allyTarget = this.party[targetIndex];
+        targetId = (allyTarget && allyTarget.hp > 0) ? allyTarget.id : hero.id;
       } else if (skill.targeting === 'self') {
         targetId = hero.id;
       }
@@ -147,7 +148,9 @@ export class CombatUIController {
       const hero = this.party[heroIndex];
       if (!hero || hero.hp <= 0) return;
 
-      const targetId = this.party[targetIndex]?.id ?? hero.id;
+      // Prefer selected target but fall back to caster if target is dead
+      const targetCandidate = this.party[targetIndex];
+      const targetId = (targetCandidate && targetCandidate.hp > 0) ? targetCandidate.id : hero.id;
       this.combat.executeAction({
         type: 'item',
         actorId: hero.id,
@@ -305,6 +308,7 @@ export class CombatUIController {
         name: s.name,
         mpCost: s.mpCost,
         description: s.description,
+        targeting: s.targeting,
       }));
     this.ui.updateSkills(skills, hero.mp);
 

@@ -28,6 +28,7 @@ export interface DungeonMapScreen {
   hide(): void;
   destroy(): void;
   onEnterRoom(callback: () => void): void;
+  onDungeonComplete(callback: () => void): void;
 }
 
 export function createDungeonMapScreen(): DungeonMapScreen {
@@ -78,6 +79,7 @@ export function createDungeonMapScreen(): DungeonMapScreen {
   document.body.appendChild(container);
 
   let enterCallback: (() => void) | null = null;
+  let dungeonCompleteCallback: (() => void) | null = null;
 
   function render(data: DungeonMapData) {
     const currentRoom = data.rooms[data.currentRoomIndex];
@@ -217,8 +219,28 @@ export function createDungeonMapScreen(): DungeonMapScreen {
         </div>
       `
       : `
-        <div style="text-align: center; margin-top: 20px; color: #4CAF50; font-size: 18px; font-weight: bold;">
-          Dungeon Cleared!
+        <div style="text-align: center; margin-top: 20px;">
+          <div style="color: #4CAF50; font-size: 22px; font-weight: bold; letter-spacing: 3px; margin-bottom: 16px;">
+            *** DUNGEON CLEARED! ***
+          </div>
+          <div style="color: #aaa; font-size: 13px; margin-bottom: 20px;">
+            All rooms have been conquered. Your party is victorious!
+          </div>
+          <button id="dungeon-complete-btn" style="
+            width: 260px;
+            padding: 14px 32px;
+            font-size: 16px;
+            font-family: 'Courier New', monospace;
+            font-weight: bold;
+            letter-spacing: 3px;
+            border: 2px solid #4CAF50;
+            border-radius: 6px;
+            background: rgba(76, 175, 80, 0.15);
+            color: #4CAF50;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            text-transform: uppercase;
+          ">Return to Title</button>
         </div>
       `;
 
@@ -248,6 +270,23 @@ export function createDungeonMapScreen(): DungeonMapScreen {
         if (enterCallback) enterCallback();
       });
     }
+
+    const completeBtn = document.getElementById('dungeon-complete-btn');
+    if (completeBtn) {
+      completeBtn.addEventListener('mouseenter', () => {
+        (completeBtn as HTMLButtonElement).style.background = 'rgba(76, 175, 80, 0.3)';
+        (completeBtn as HTMLButtonElement).style.transform = 'scale(1.03)';
+        (completeBtn as HTMLButtonElement).style.boxShadow = '0 0 20px rgba(76, 175, 80, 0.3)';
+      });
+      completeBtn.addEventListener('mouseleave', () => {
+        (completeBtn as HTMLButtonElement).style.background = 'rgba(76, 175, 80, 0.15)';
+        (completeBtn as HTMLButtonElement).style.transform = 'scale(1)';
+        (completeBtn as HTMLButtonElement).style.boxShadow = 'none';
+      });
+      completeBtn.addEventListener('click', () => {
+        if (dungeonCompleteCallback) dungeonCompleteCallback();
+      });
+    }
   }
 
   return {
@@ -263,6 +302,9 @@ export function createDungeonMapScreen(): DungeonMapScreen {
     },
     onEnterRoom(callback) {
       enterCallback = callback;
+    },
+    onDungeonComplete(callback) {
+      dungeonCompleteCallback = callback;
     },
   };
 }

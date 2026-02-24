@@ -25,6 +25,7 @@ export interface CombatUISkill {
   name: string;
   mpCost: number;
   description: string;
+  targeting: string;
 }
 
 export interface CombatUIItem {
@@ -188,6 +189,7 @@ export function createCombatUI(): CombatUI {
   let currentMp = 0;
   let actionMode: 'main' | 'skills' | 'items' = 'main';
   let selectedItemTargetIndex = 0;
+  let selectedAllyTargetIndex = 0;
 
   function actionBtnStyle(color: string, disabled: boolean): string {
     return `
@@ -262,10 +264,25 @@ export function createCombatUI(): CombatUI {
         <button id="combat-end-turn-btn" class="action-btn" style="${actionBtnStyle('#37474F', dis)}" ${dis ? 'disabled' : ''}>END TURN</button>
       `;
     } else if (actionMode === 'skills') {
+      const hasEnemySkill = currentSkills.some(s => s.targeting === 'single_enemy');
+      const hasAllySkill = currentSkills.some(s => s.targeting === 'single_ally');
+
+      const allySelector = hasAllySkill && currentParty.length > 0
+        ? `<div style="margin-bottom: 8px;">
+            <div style="font-size: 10px; color: #999; margin-bottom: 4px; letter-spacing: 1px;">TARGET ALLY:</div>
+            ${currentParty
+              .map(
+                (char, index) => `
+                <button class="ally-select" data-index="${index}" style="${selectBtnStyle(selectedAllyTargetIndex === index, '#4CAF50', char.hp <= 0)}">${char.name}</button>`
+              )
+              .join('')}
+          </div>`
+        : '';
+
       const skillButtons = currentSkills.map(skill => {
         const canUse = currentMp >= skill.mpCost && actionsEnabled;
         return `
-        <button class="skill-btn" data-skill-id="${skill.id}" style="
+        <button class="skill-btn" data-skill-id="${skill.id}" data-targeting="${skill.targeting}" style="
           width: 100%; padding: 8px; margin-bottom: 4px;
           background: ${canUse ? 'rgba(106, 27, 154, 0.35)' : 'rgba(60, 60, 60, 0.3)'};
           color: ${canUse ? '#CE93D8' : '#666'};
@@ -283,7 +300,8 @@ export function createCombatUI(): CombatUI {
         <div style="margin-bottom: 8px;">
           <button id="combat-back-btn" style="${actionBtnStyle('#37474F', false)}">BACK</button>
         </div>
-        ${enemySelector}
+        ${hasEnemySkill ? enemySelector : ''}
+        ${allySelector}
         ${skillButtons}
       `;
     } else if (actionMode === 'items') {
@@ -355,6 +373,7 @@ export function createCombatUI(): CombatUI {
     document.getElementById('combat-skills-btn')?.addEventListener('click', () => {
       if (actionsEnabled) {
         actionMode = 'skills';
+        selectedAllyTargetIndex = selectedHeroIndex; // default ally target = self
         renderActionButtons();
       }
     });
@@ -373,18 +392,31 @@ export function createCombatUI(): CombatUI {
       renderActionButtons();
     });
 
+    actionButtons.querySelectorAll('.ally-select').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const idx = parseInt((btn as HTMLElement).dataset.index!, 10);
+        if (currentParty[idx]?.hp > 0) {
+          selectedAllyTargetIndex = idx;
+          renderActionButtons();
+        }
+      });
+    });
+
     actionButtons.querySelectorAll('.skill-btn').forEach(btn => {
       btn.addEventListener('click', () => {
         if (!actionsEnabled) return;
         const skillId = (btn as HTMLElement).dataset.skillId!;
-        if (skillCallback) skillCallback(selectedHeroIndex, skillId, selectedEnemyIndex, false);
+        const targeting = (btn as HTMLElement).dataset.targeting ?? '';
+        const isAlly = targeting === 'single_ally' || targeting === 'all_allies' || targeting === 'self';
+        const targetIdx = isAlly ? selectedAllyTargetIndex : selectedEnemyIndex;
+        if (skillCallback) skillCallback(selectedHeroIndex, skillId, targetIdx, isAlly);
       });
     });
 
     actionButtons.querySelectorAll('.item-target-select').forEach(btn => {
       btn.addEventListener('click', () => {
         const idx = parseInt((btn as HTMLElement).dataset.index!, 10);
-        if (currentParty[idx]) {
+        if (currentParty[idx]?.hp > 0) {
           selectedItemTargetIndex = idx;
           renderActionButtons();
         }

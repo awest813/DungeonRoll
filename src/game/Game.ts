@@ -27,6 +27,13 @@ export class Game {
     }
   }
 
+  reset(): void {
+    this.stateMachine = createStateMachine('TITLE');
+    if (this.onStateChangeCallback) {
+      this.onStateChangeCallback(this.stateMachine.currentState);
+    }
+  }
+
   getCurrentState(): GameState {
     return this.stateMachine.currentState;
   }
