@@ -26,6 +26,8 @@ export interface DungeonMapData {
   party: DungeonPartyMember[];
   encounterPreview: string[];
   encounterTotalHp: number;
+  encounterIndex: number;
+  totalEncounters: number;
   gold: number;
   restCost: number;
   nextRoomChoices: { id: string; name: string; recommendedLevel: number; description: string }[];
@@ -316,10 +318,17 @@ export function createDungeonMapScreen(): DungeonMapScreen {
         else { diffLabel = 'EASY'; diffColor = '#4CAF50'; }
       }
 
+      const encounterCounterHtml = data.totalEncounters > 1
+        ? `<span style="font-size: 10px; color: #aaa; letter-spacing: 1px;">Encounter ${data.encounterIndex + 1}/${data.totalEncounters}</span>`
+        : '';
+
       encounterInfo = `
         <div style="margin-top: 16px;">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-            <span style="font-size: 12px; color: #f44336; letter-spacing: 2px;">ENEMIES AHEAD</span>
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <span style="font-size: 12px; color: #f44336; letter-spacing: 2px;">ENEMIES AHEAD</span>
+              ${encounterCounterHtml}
+            </div>
             ${diffLabel ? `<span style="font-size: 10px; font-weight: bold; color: ${diffColor}; letter-spacing: 2px; padding: 2px 8px; border: 1px solid ${diffColor}; border-radius: 3px;">${diffLabel}</span>` : ''}
           </div>
           <div style="

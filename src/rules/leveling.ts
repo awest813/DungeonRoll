@@ -1,6 +1,6 @@
 // Pure leveling system - no Babylon imports
 
-import { Character } from './types';
+import { Character, CharacterClass } from './types';
 import { ClassTemplate } from '../content/loaders/types';
 import { calculateXpToNext } from '../content/loaders';
 
@@ -16,7 +16,7 @@ export interface LevelUpResult {
   newSkills: string[];
 }
 
-export function awardXp(party: Character[], xp: number, classes: Map<string, ClassTemplate>): LevelUpResult[] {
+export function awardXp(party: Character[], xp: number, classes: Map<CharacterClass, ClassTemplate>): LevelUpResult[] {
   const results: LevelUpResult[] = [];
   const xpPerMember = Math.floor(xp / party.filter(c => c.hp > 0).length);
 
@@ -37,7 +37,7 @@ export function awardXp(party: Character[], xp: number, classes: Map<string, Cla
   return results;
 }
 
-function levelUp(character: Character, classes: Map<string, ClassTemplate>): LevelUpResult | null {
+function levelUp(character: Character, classes: Map<CharacterClass, ClassTemplate>): LevelUpResult | null {
   const classTemplate = classes.get(character.characterClass);
   if (!classTemplate) return null;
 

@@ -318,6 +318,8 @@ export class GameSession {
       rooms: this.getAllRoomInfos(),
       currentRoomId: this.currentRoomId,
       visitedRoomIds: this.visitedRoomIds,
+      encounterIndex: roomCleared ? 0 : this.currentEncounterIndex,
+      totalEncounters: room?.encounters.length ?? 1,
       party: party.map(c => ({
         name: c.name,
         characterClass: c.characterClass,
@@ -438,7 +440,7 @@ export class GameSession {
       const totalXp = enemies.reduce((sum, e) => sum + e.xpReward, 0);
       const totalGold = enemies.reduce((sum, e) => sum + e.goldReward, 0);
       this.gold += totalGold;
-      const levelUps = awardXp(party, totalXp, this.content.classes as any);
+      const levelUps = awardXp(party, totalXp, this.content.classes);
 
       const itemDrops = this.generateItemDrops(enemies);
       if (itemDrops.length > 0) {
@@ -500,11 +502,9 @@ export class GameSession {
 
       this.game.dispatch('WIN_COMBAT');
     } else {
+      // Don't reset navigation state yet — handleStateChange('DEFEAT') reads it
+      // to build the defeat summary. State resets happen in defeatScreen.onReturnToTitle.
       this.persistentParty = null;
-      this.currentRoomId = STARTING_ROOM;
-      this.currentEncounterIndex = 0;
-      this.visitedRoomIds = [];
-      this._foundEquipment = [];
       this.game.dispatch('LOSE_COMBAT');
     }
   }
