@@ -1,0 +1,283 @@
+{
+  "equipment": [
+    {
+      "id": "rusty-sword",
+      "name": "Rusty Sword",
+      "slot": "weapon",
+      "rarity": "common",
+      "description": "A battered blade. Better than bare fists.",
+      "bonuses": { "attack": 1 },
+      "classRestriction": ["knight", "rogue"]
+    },
+    {
+      "id": "iron-sword",
+      "name": "Iron Sword",
+      "slot": "weapon",
+      "rarity": "common",
+      "description": "A sturdy iron blade, reliable in combat.",
+      "bonuses": { "attack": 2 },
+      "classRestriction": ["knight", "rogue"]
+    },
+    {
+      "id": "steel-longsword",
+      "name": "Steel Longsword",
+      "slot": "weapon",
+      "rarity": "uncommon",
+      "description": "Well-forged steel, cuts cleanly through armor.",
+      "bonuses": { "attack": 3, "speed": 1 },
+      "classRestriction": ["knight"]
+    },
+    {
+      "id": "flame-blade",
+      "name": "Flame Blade",
+      "slot": "weapon",
+      "rarity": "rare",
+      "description": "A sword wreathed in magical fire.",
+      "bonuses": { "attack": 4, "speed": 1 },
+      "classRestriction": ["knight"]
+    },
+    {
+      "id": "apprentice-staff",
+      "name": "Apprentice Staff",
+      "slot": "weapon",
+      "rarity": "common",
+      "description": "A simple wooden staff humming with latent energy.",
+      "bonuses": { "attack": 1, "mp": 5 },
+      "classRestriction": ["mage", "cleric"]
+    },
+    {
+      "id": "arcane-staff",
+      "name": "Arcane Staff",
+      "slot": "weapon",
+      "rarity": "uncommon",
+      "description": "Crystalline focus amplifies magical power.",
+      "bonuses": { "attack": 2, "mp": 10 },
+      "classRestriction": ["mage"]
+    },
+    {
+      "id": "staff-of-storms",
+      "name": "Staff of Storms",
+      "slot": "weapon",
+      "rarity": "rare",
+      "description": "Lightning crackles along its length.",
+      "bonuses": { "attack": 4, "mp": 15, "speed": 1 },
+      "classRestriction": ["mage"]
+    },
+    {
+      "id": "hunting-bow",
+      "name": "Hunting Bow",
+      "slot": "weapon",
+      "rarity": "common",
+      "description": "A light bow suited for quick shots.",
+      "bonuses": { "attack": 1, "speed": 1 },
+      "classRestriction": ["ranger"]
+    },
+    {
+      "id": "composite-bow",
+      "name": "Composite Bow",
+      "slot": "weapon",
+      "rarity": "uncommon",
+      "description": "Layered wood and horn for greater draw strength.",
+      "bonuses": { "attack": 3, "speed": 1 },
+      "classRestriction": ["ranger"]
+    },
+    {
+      "id": "windrunner-bow",
+      "name": "Windrunner Bow",
+      "slot": "weapon",
+      "rarity": "rare",
+      "description": "Arrows fly with supernatural speed and accuracy.",
+      "bonuses": { "attack": 4, "speed": 3 },
+      "classRestriction": ["ranger"]
+    },
+    {
+      "id": "iron-dagger",
+      "name": "Iron Dagger",
+      "slot": "weapon",
+      "rarity": "common",
+      "description": "Quick and quiet. A rogue's best friend.",
+      "bonuses": { "attack": 1, "speed": 2 },
+      "classRestriction": ["rogue"]
+    },
+    {
+      "id": "shadow-daggers",
+      "name": "Shadow Daggers",
+      "slot": "weapon",
+      "rarity": "uncommon",
+      "description": "Dark-forged blades that seem to drink the light.",
+      "bonuses": { "attack": 3, "speed": 2 },
+      "classRestriction": ["rogue"]
+    },
+    {
+      "id": "venom-fang",
+      "name": "Venom Fang",
+      "slot": "weapon",
+      "rarity": "rare",
+      "description": "A blade coated in ever-dripping poison.",
+      "bonuses": { "attack": 4, "speed": 3 },
+      "classRestriction": ["rogue"]
+    },
+    {
+      "id": "holy-mace",
+      "name": "Holy Mace",
+      "slot": "weapon",
+      "rarity": "uncommon",
+      "description": "Blessed weapon radiating divine warmth.",
+      "bonuses": { "attack": 2, "mp": 8, "hp": 5 },
+      "classRestriction": ["cleric"]
+    },
+    {
+      "id": "sunforged-hammer",
+      "name": "Sunforged Hammer",
+      "slot": "weapon",
+      "rarity": "rare",
+      "description": "Forged in sacred flame, smites the unholy.",
+      "bonuses": { "attack": 4, "mp": 12, "hp": 8 },
+      "classRestriction": ["cleric"]
+    },
+    {
+      "id": "leather-armor",
+      "name": "Leather Armor",
+      "slot": "armor",
+      "rarity": "common",
+      "description": "Basic protection, light enough to move freely.",
+      "bonuses": { "armor": 1, "hp": 5 },
+      "classRestriction": []
+    },
+    {
+      "id": "chainmail",
+      "name": "Chainmail",
+      "slot": "armor",
+      "rarity": "common",
+      "description": "Interlocking metal rings offer solid defense.",
+      "bonuses": { "armor": 2, "hp": 8 },
+      "classRestriction": ["knight", "cleric"]
+    },
+    {
+      "id": "plate-armor",
+      "name": "Plate Armor",
+      "slot": "armor",
+      "rarity": "uncommon",
+      "description": "Heavy steel plates. Maximum protection at the cost of speed.",
+      "bonuses": { "armor": 4, "hp": 12, "speed": -1 },
+      "classRestriction": ["knight"]
+    },
+    {
+      "id": "dragon-scale-mail",
+      "name": "Dragon Scale Mail",
+      "slot": "armor",
+      "rarity": "rare",
+      "description": "Scales from a true dragon. Light yet nearly impervious.",
+      "bonuses": { "armor": 5, "hp": 15, "speed": 1 },
+      "classRestriction": ["knight", "cleric"]
+    },
+    {
+      "id": "silk-robes",
+      "name": "Silk Robes",
+      "slot": "armor",
+      "rarity": "common",
+      "description": "Enchanted fabric that channels magic more effectively.",
+      "bonuses": { "mp": 8, "hp": 3 },
+      "classRestriction": ["mage", "cleric"]
+    },
+    {
+      "id": "arcane-vestments",
+      "name": "Arcane Vestments",
+      "slot": "armor",
+      "rarity": "uncommon",
+      "description": "Robes woven with protective wards.",
+      "bonuses": { "armor": 2, "mp": 12, "hp": 5 },
+      "classRestriction": ["mage"]
+    },
+    {
+      "id": "shadow-cloak",
+      "name": "Shadow Cloak",
+      "slot": "armor",
+      "rarity": "uncommon",
+      "description": "A cloak that blurs the wearer's silhouette.",
+      "bonuses": { "armor": 1, "speed": 3, "hp": 5 },
+      "classRestriction": ["rogue", "ranger"]
+    },
+    {
+      "id": "ranger-garb",
+      "name": "Ranger Garb",
+      "slot": "armor",
+      "rarity": "common",
+      "description": "Light and practical wilderness armor.",
+      "bonuses": { "armor": 1, "speed": 1, "hp": 6 },
+      "classRestriction": ["ranger", "rogue"]
+    },
+    {
+      "id": "mithril-vest",
+      "name": "Mithril Vest",
+      "slot": "armor",
+      "rarity": "rare",
+      "description": "Legendary elven metal, impossibly light and strong.",
+      "bonuses": { "armor": 4, "hp": 10, "speed": 2 },
+      "classRestriction": []
+    },
+    {
+      "id": "iron-ring",
+      "name": "Iron Ring",
+      "slot": "accessory",
+      "rarity": "common",
+      "description": "A simple ring that bolsters vitality.",
+      "bonuses": { "hp": 8 },
+      "classRestriction": []
+    },
+    {
+      "id": "mana-crystal",
+      "name": "Mana Crystal",
+      "slot": "accessory",
+      "rarity": "common",
+      "description": "A shard of crystallized magical energy.",
+      "bonuses": { "mp": 10 },
+      "classRestriction": []
+    },
+    {
+      "id": "wolf-fang-amulet",
+      "name": "Wolf Fang Amulet",
+      "slot": "accessory",
+      "rarity": "common",
+      "description": "A fang on a leather cord. Sharpens the senses.",
+      "bonuses": { "attack": 1, "speed": 1 },
+      "classRestriction": []
+    },
+    {
+      "id": "guardian-shield",
+      "name": "Guardian Shield",
+      "slot": "accessory",
+      "rarity": "uncommon",
+      "description": "A kite shield blessed by temple wardens.",
+      "bonuses": { "armor": 3, "hp": 6 },
+      "classRestriction": ["knight", "cleric"]
+    },
+    {
+      "id": "ring-of-haste",
+      "name": "Ring of Haste",
+      "slot": "accessory",
+      "rarity": "uncommon",
+      "description": "Time itself bends around the wearer.",
+      "bonuses": { "speed": 3 },
+      "classRestriction": []
+    },
+    {
+      "id": "blood-pendant",
+      "name": "Blood Pendant",
+      "slot": "accessory",
+      "rarity": "uncommon",
+      "description": "A crimson gem that pulses with stolen vitality.",
+      "bonuses": { "attack": 2, "hp": 8 },
+      "classRestriction": []
+    },
+    {
+      "id": "dragon-heart-gem",
+      "name": "Dragon Heart Gem",
+      "slot": "accessory",
+      "rarity": "rare",
+      "description": "Crystallized dragon essence. Grants incredible power.",
+      "bonuses": { "attack": 3, "hp": 12, "mp": 8 },
+      "classRestriction": []
+    }
+  ]
+}

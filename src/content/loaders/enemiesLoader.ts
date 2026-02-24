@@ -20,6 +20,10 @@ export function loadEnemies(rawContent: unknown): Map<string, EnemyTemplate> {
     const skillIdsRaw = expectArray(row.skillIds, `${path}.skillIds`);
     const skillIds = skillIdsRaw.map((s, i) => expectString(s, `${path}.skillIds[${i}]`));
 
+    const aiRole = row.aiRole !== undefined
+      ? expectString(row.aiRole, `${path}.aiRole`) as EnemyTemplate['aiRole']
+      : 'basic' as const;
+
     const enemy: EnemyTemplate = {
       id: expectString(row.id, `${path}.id`),
       name: expectString(row.name, `${path}.name`),
@@ -31,6 +35,7 @@ export function loadEnemies(rawContent: unknown): Map<string, EnemyTemplate> {
       xpReward: expectNumber(row.xpReward, `${path}.xpReward`),
       goldReward: expectNumber(row.goldReward, `${path}.goldReward`),
       skillIds,
+      aiRole,
     };
 
     expectUniqueId(enemyMap, enemy, path);

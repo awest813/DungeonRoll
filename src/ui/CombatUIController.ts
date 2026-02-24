@@ -5,7 +5,8 @@ import { CombatEngine } from '../rules/combat';
 import { CombatLog } from '../rules/log';
 import { CombatUI } from './createCombatUI';
 import { CombatRenderer } from '../render/CombatRenderer';
-import { GameContent } from '../content/loaders/types';
+import { GameContent, EnemyAIRole } from '../content/loaders/types';
+import { decideEnemyAction } from '../rules/enemyAI';
 
 const STATUS_LABELS: Record<string, string> = {
   poisoned: '[PSN]',
@@ -266,84 +267,119 @@ export class CombatUIController {
       const enemy = aliveEnemies[enemyIndex];
       enemyIndex++;
 
-      const availableSkills = enemy.skillIds
-        .map(id => this.content.skills.get(id))
-        .filter(s => s && s.id !== 'basic-attack' && enemy.mp >= s.mpCost);
-
       const currentAliveParty = this.party.filter(c => c.hp > 0);
       if (currentAliveParty.length === 0) {
         this.refresh();
         this.checkCombatEnd();
         return;
       }
-      const target = currentAliveParty[Math.floor(Math.random() * currentAliveParty.length)];
 
-      if (availableSkills.length > 0 && Math.random() < 0.4) {
-        const skill = availableSkills[Math.floor(Math.random() * availableSkills.length)]!;
+      // Look up AI role from template (strip instance suffix like "-1")
+      const templateId = enemy.id.replace(/-\d+$/, '');
+      const template = this.content.enemies.get(templateId);
+      const aiRole: EnemyAIRole = template?.aiRole ?? 'basic';
+
+      const action = decideEnemyAction(enemy, aiRole, this.party, this.enemies, this.content);
+
+      if (action.type === 'guard') {
+        this.combat.executeAction(action);
+        if (this.renderer) {
+          this.renderer.playGuardAnimation(enemy.id, true);
+        }
+        this.refresh();
+        setTimeout(processNextEnemy, 300);
+        return;
+      }
+
+      if (action.type === 'skill' && action.skillId) {
+        const skill = this.content.skills.get(action.skillId);
+        if (!skill) {
+          // Fallback to basic attack
+          const fallbackTarget = currentAliveParty[Math.floor(Math.random() * currentAliveParty.length)];
+          this.doEnemyBasicAttack(enemy, fallbackTarget, processNextEnemy);
+          return;
+        }
+
         const effectType = getSkillEffectType(skill.id);
-        const resolveEnemySkill = () => {
-          const partyHpSnapshot = new Map(this.party.map(c => [c.id, c.hp]));
-          this.combat.executeAction({
-            type: 'skill',
-            actorId: enemy.id,
-            skillId: skill.id,
-            targetId: target.id,
-          });
+        const resolveSkill = () => {
+          const partyHpBefore = new Map(this.party.map(c => [c.id, c.hp]));
+          const enemyHpBefore = new Map(this.enemies.map(e => [e.id, e.hp]));
+
+          this.combat.executeAction(action);
+
           if (this.renderer) {
             this.party.forEach(c => {
               this.renderer!.updateUnitHP(c.id, c.hp, c.maxHp);
-              const before = partyHpSnapshot.get(c.id) ?? c.hp;
+              const before = partyHpBefore.get(c.id) ?? c.hp;
               const diff = before - c.hp;
               if (diff > 0) {
                 this.renderer!.playHitAnimation(c.id);
                 this.renderer!.showDamageNumber(c.id, diff, 'damage');
               }
             });
+            // Show heals on enemy allies (healer/boss AI)
+            this.enemies.forEach(e => {
+              const before = enemyHpBefore.get(e.id) ?? e.hp;
+              const diff = e.hp - before;
+              if (diff > 0) {
+                this.renderer!.updateUnitHP(e.id, e.hp, e.maxHp);
+                this.renderer!.showDamageNumber(e.id, diff, 'heal');
+              }
+            });
           }
           this.refresh();
           setTimeout(processNextEnemy, 300);
         };
+
         if (this.renderer) {
-          this.renderer.playSkillAnimation(enemy.id, target.id, effectType, resolveEnemySkill);
+          this.renderer.playSkillAnimation(enemy.id, action.targetId, effectType, resolveSkill);
         } else {
-          resolveEnemySkill();
+          resolveSkill();
         }
-      } else {
-        if (this.renderer) {
-          this.renderer.playAttackAnimation(enemy.id, target.id, () => {
-            const hpBefore = target.hp;
-            this.combat.executeAction({
-              type: 'attack',
-              actorId: enemy.id,
-              targetId: target.id,
-            });
-            const damage = hpBefore - target.hp;
-            if (damage > 0) {
-              this.renderer!.playHitAnimation(target.id);
-              this.renderer!.updateUnitHP(target.id, target.hp, target.maxHp);
-              this.renderer!.showDamageNumber(target.id, damage, 'damage');
-            } else {
-              this.renderer!.showDamageNumber(target.id, 0, 'miss');
-            }
-            if (!target.isGuarding && this.renderer) {
-              this.renderer.playGuardAnimation(target.id, false);
-            }
-            this.refresh();
-            setTimeout(processNextEnemy, 300);
-          });
-        } else {
-          this.combat.executeAction({
-            type: 'attack',
-            actorId: enemy.id,
-            targetId: target.id,
-          });
-          this.refresh();
-          setTimeout(processNextEnemy, 100);
-        }
+        return;
       }
+
+      // Default: basic attack
+      const target = this.party.find(c => c.id === action.targetId && c.hp > 0)
+        ?? currentAliveParty[0];
+      this.doEnemyBasicAttack(enemy, target, processNextEnemy);
     };
 
     processNextEnemy();
+  }
+
+  private doEnemyBasicAttack(enemy: Enemy, target: Character, next: () => void) {
+    if (this.renderer) {
+      this.renderer.playAttackAnimation(enemy.id, target.id, () => {
+        const hpBefore = target.hp;
+        this.combat.executeAction({
+          type: 'attack',
+          actorId: enemy.id,
+          targetId: target.id,
+        });
+        const damage = hpBefore - target.hp;
+        if (damage > 0) {
+          this.renderer!.playHitAnimation(target.id);
+          this.renderer!.updateUnitHP(target.id, target.hp, target.maxHp);
+          this.renderer!.showDamageNumber(target.id, damage, 'damage');
+        } else {
+          this.renderer!.showDamageNumber(target.id, 0, 'miss');
+        }
+        if (!target.isGuarding && this.renderer) {
+          this.renderer.playGuardAnimation(target.id, false);
+        }
+        this.refresh();
+        setTimeout(next, 300);
+      });
+    } else {
+      this.combat.executeAction({
+        type: 'attack',
+        actorId: enemy.id,
+        targetId: target.id,
+      });
+      this.refresh();
+      setTimeout(next, 100);
+    }
   }
 
   private refresh() {

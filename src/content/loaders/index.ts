@@ -3,38 +3,15 @@ import itemsRaw from '../items.json';
 import roomsRaw from '../rooms.json';
 import skillsRaw from '../skills.json';
 import classesRaw from '../classes.json';
+import equipmentRaw from '../equipment.json';
 import { Character, Enemy, CharacterClass } from '../../rules/types';
 import { loadEnemies } from './enemiesLoader';
 import { loadItems } from './itemsLoader';
 import { loadRooms } from './roomsLoader';
 import { loadSkills } from './skillsLoader';
 import { loadClasses } from './classesLoader';
-import { EncounterSetup, GameContent, PartyTemplate, EnemyTemplate, ClassTemplate } from './types';
-
-function toCharacter(member: PartyTemplate): Character {
-  return {
-    id: member.id,
-    name: member.name,
-    characterClass: member.characterClass,
-    hp: member.hp,
-    maxHp: member.hp,
-    mp: member.mp,
-    maxMp: member.mp,
-    attack: member.attack,
-    armor: member.armor,
-    speed: member.speed,
-    level: member.level,
-    xp: 0,
-    xpToNext: calculateXpToNext(member.level),
-    isGuarding: false,
-    statuses: [],
-    skillIds: [...member.skillIds],
-    inventory: [
-      { itemId: 'small-potion', quantity: 3 },
-      { itemId: 'ether', quantity: 1 },
-    ],
-  };
-}
+import { loadEquipment } from './equipmentLoader';
+import { EncounterSetup, GameContent, EnemyTemplate, ClassTemplate } from './types';
 
 function toEnemy(template: EnemyTemplate, instanceIndex: number): Enemy {
   const suffix = instanceIndex > 0 ? ` ${String.fromCharCode(65 + instanceIndex)}` : '';
@@ -66,6 +43,7 @@ export function loadGameContent(): GameContent {
   const items = loadItems(itemsRaw);
   const rooms = loadRooms(roomsRaw);
   const classes = loadClasses(classesRaw);
+  const equipment = loadEquipment(equipmentRaw);
 
   for (const room of rooms.values()) {
     for (const encounter of room.encounters) {
@@ -79,7 +57,7 @@ export function loadGameContent(): GameContent {
     }
   }
 
-  return { enemies, skills, items, rooms, classes };
+  return { enemies, skills, items, equipment, rooms, classes };
 }
 
 export function createEncounterFromRoom(
@@ -114,7 +92,7 @@ export function createEncounterFromRoom(
   return {
     roomId,
     encounterId,
-    party: room.party.map((member) => toCharacter(member)),
+    party: [], // Party is managed by GameSession from party select
     enemies,
   };
 }
@@ -152,5 +130,6 @@ export function createCharacterFromClass(
       { itemId: 'small-potion', quantity: 3 },
       { itemId: 'ether', quantity: 1 },
     ],
+    equipment: [],
   };
 }

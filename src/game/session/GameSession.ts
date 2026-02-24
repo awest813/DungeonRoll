@@ -6,7 +6,7 @@ import { CombatEngine } from '../../rules/combat';
 import { createCombatUI, CombatUI } from '../../ui/createCombatUI';
 import { CombatUIController } from '../../ui/CombatUIController';
 import { CombatRenderer } from '../../render/CombatRenderer';
-import { GameContent, RoomTemplate } from '../../content/loaders/types';
+import { GameContent, RoomTemplate, EquipmentTemplate } from '../../content/loaders/types';
 import { Character, Enemy, CharacterClass } from '../../rules/types';
 import { createEncounterFromRoom, createCharacterFromClass } from '../../content/loaders';
 import { awardXp, LevelUpResult } from '../../rules/leveling';
@@ -23,17 +23,8 @@ export interface GameSessionConfig {
   onStateChange?: (state: GameState) => void;
 }
 
-const DUNGEON_ORDER = [
-  'entry-hall',
-  'goblin-den',
-  'bone-corridor',
-  'wolf-den',
-  'troll-bridge',
-  'dark-sanctum',
-  'dragon-lair',
-];
-
 const REST_COST = 20;
+const STARTING_ROOM = 'entry-hall';
 
 export class GameSession {
   private readonly game: Game;
@@ -54,10 +45,12 @@ export class GameSession {
 
   // Game state
   private persistentParty: Character[] | null = null;
-  private currentRoomIndex: number = 0;
+  private currentRoomId: string = STARTING_ROOM;
   private currentEncounterIndex: number = 0;
+  private visitedRoomIds: string[] = [];
   private pendingRewardData: RewardData | null = null;
   private gold: number = 0;
+  private _foundEquipment: string[] = [];
 
   constructor(config: GameSessionConfig) {
     this.scene = config.scene;
@@ -86,28 +79,30 @@ export class GameSession {
 
     this.partySelectScreen.onConfirm((selectedClassIds) => {
       this.partySelectScreen.hide();
-      // Create characters from selected class templates
       this.persistentParty = selectedClassIds.map((classId, index) => {
         const classTemplate = this.content.classes.get(classId as CharacterClass);
         if (!classTemplate) throw new Error(`Unknown class: ${classId}`);
         return createCharacterFromClass(classTemplate, index);
       });
       this.gold = 0;
-      this.currentRoomIndex = 0;
+      this.currentRoomId = STARTING_ROOM;
       this.currentEncounterIndex = 0;
+      this.visitedRoomIds = [];
+      this._foundEquipment = [];
       this.game.dispatch('START_RUN');
     });
 
     this.dungeonMap.onEnterRoom(() => {
-      // MAP -> EVENT (event screen shows narrative before combat)
       this.game.dispatch('ENTER_ROOM');
     });
 
     this.dungeonMap.onDungeonComplete(() => {
       this.persistentParty = null;
       this.gold = 0;
-      this.currentRoomIndex = 0;
+      this.currentRoomId = STARTING_ROOM;
       this.currentEncounterIndex = 0;
+      this.visitedRoomIds = [];
+      this._foundEquipment = [];
       this.game.reset();
     });
 
@@ -120,12 +115,47 @@ export class GameSession {
             char.mp = Math.min(char.maxMp, char.mp + Math.floor(char.maxMp * 0.5));
           }
         }
-        this.showDungeonMap(); // refresh display
+        this.showDungeonMap();
       }
     });
 
+    this.dungeonMap.onChooseRoom((roomId: string) => {
+      this.currentRoomId = roomId;
+      this.currentEncounterIndex = 0;
+      this.showDungeonMap();
+    });
+
+    this.dungeonMap.onEquip((charIndex: number, equipmentId: string) => {
+      const char = this.persistentParty?.[charIndex];
+      if (!char) return;
+      const tmpl = this.content.equipment.get(equipmentId);
+      if (!tmpl) return;
+      if (tmpl.classRestriction.length > 0 && !tmpl.classRestriction.includes(char.characterClass)) return;
+      // Remove existing item in same slot (return bonuses)
+      const oldEquip = char.equipment.find(e => e.slot === tmpl.slot);
+      if (oldEquip) {
+        const oldTmpl = this.content.equipment.get(oldEquip.equipmentId);
+        if (oldTmpl) this.removeEquipmentBonuses(char, oldTmpl);
+      }
+      char.equipment = char.equipment.filter(e => e.slot !== tmpl.slot);
+      char.equipment.push({ equipmentId: tmpl.id, slot: tmpl.slot });
+      this.applyEquipmentBonuses(char, tmpl);
+      this.showDungeonMap();
+    });
+
+    this.dungeonMap.onUnequip((charIndex: number, slot: string) => {
+      const char = this.persistentParty?.[charIndex];
+      if (!char) return;
+      const existing = char.equipment.find(e => e.slot === slot);
+      if (existing) {
+        const tmpl = this.content.equipment.get(existing.equipmentId);
+        if (tmpl) this.removeEquipmentBonuses(char, tmpl);
+      }
+      char.equipment = char.equipment.filter(e => e.slot !== slot);
+      this.showDungeonMap();
+    });
+
     this.eventScreen.onProceed(() => {
-      // EVENT -> COMBAT
       this.game.dispatch('RESOLVE_EVENT');
     });
 
@@ -136,8 +166,10 @@ export class GameSession {
     this.defeatScreen.onReturnToTitle(() => {
       this.persistentParty = null;
       this.gold = 0;
-      this.currentRoomIndex = 0;
+      this.currentRoomId = STARTING_ROOM;
       this.currentEncounterIndex = 0;
+      this.visitedRoomIds = [];
+      this._foundEquipment = [];
       this.game.reset();
     });
   }
@@ -196,10 +228,10 @@ export class GameSession {
         this.showRewardScreen();
         break;
       case 'DEFEAT': {
-        const room = this.getCurrentRoom();
+        const room = this.content.rooms.get(this.currentRoomId);
         const defeatData: DefeatData = {
-          roomsCleared: this.currentRoomIndex,
-          totalRooms: DUNGEON_ORDER.length,
+          roomsCleared: this.visitedRoomIds.length,
+          totalRooms: this.content.rooms.size,
           goldEarned: this.gold,
           roomName: room?.name ?? 'Unknown',
         };
@@ -219,26 +251,16 @@ export class GameSession {
     this.hideCombat();
   }
 
-  private getDungeonRoomInfos(): DungeonRoomInfo[] {
-    return DUNGEON_ORDER.map(roomId => {
-      const room = this.content.rooms.get(roomId);
-      return {
-        name: room?.name ?? roomId,
-        description: room?.description ?? '',
-        recommendedLevel: room?.recommendedLevel ?? 1,
-      };
-    });
-  }
-
   private showDungeonMap(): void {
-    const room = this.getCurrentRoom();
-    const encounterIndex = room ? this.currentEncounterIndex % room.encounters.length : 0;
+    const room = this.content.rooms.get(this.currentRoomId);
+    const roomCleared = room ? this.currentEncounterIndex >= room.encounters.length : true;
+
+    const encounterIndex = room && !roomCleared ? this.currentEncounterIndex : 0;
     const encounter = room?.encounters[encounterIndex];
 
-    // Build encounter preview from enemy names and total HP
     const encounterPreview: string[] = [];
     let encounterTotalHp = 0;
-    if (encounter) {
+    if (encounter && !roomCleared) {
       for (const enemyId of encounter.enemyIds) {
         const template = this.content.enemies.get(enemyId);
         if (template) {
@@ -248,12 +270,54 @@ export class GameSession {
       }
     }
 
-    // Build party data
     const party = this.persistentParty ?? [];
 
+    // Build next room choices for branching
+    const nextRoomChoices: { id: string; name: string; recommendedLevel: number; description: string }[] = [];
+    if (roomCleared && room) {
+      for (const nextId of room.nextRooms) {
+        const r = this.content.rooms.get(nextId);
+        if (r) {
+          nextRoomChoices.push({ id: r.id, name: r.name, recommendedLevel: r.recommendedLevel, description: r.description });
+        }
+      }
+    }
+
+    const dungeonComplete = roomCleared && nextRoomChoices.length === 0 && this.visitedRoomIds.length > 0;
+
+    // Collect party equipment info and available pool
+    const partyEquipment = party.map(c => {
+      const equipped: Record<string, { id: string; name: string; rarity: string }> = {};
+      for (const eq of c.equipment) {
+        const tmpl = this.content.equipment.get(eq.equipmentId);
+        if (tmpl) equipped[eq.slot] = { id: tmpl.id, name: tmpl.name, rarity: tmpl.rarity };
+      }
+      return equipped;
+    });
+
+    const equippedIds = new Set<string>();
+    for (const char of party) {
+      for (const eq of char.equipment) equippedIds.add(eq.equipmentId);
+    }
+
+    const availableEquipment = this._foundEquipment
+      .filter(id => !equippedIds.has(id))
+      .map(id => {
+        const tmpl = this.content.equipment.get(id);
+        if (!tmpl) return null;
+        return {
+          id: tmpl.id, name: tmpl.name, slot: tmpl.slot, rarity: tmpl.rarity,
+          description: tmpl.description,
+          bonuses: { ...tmpl.bonuses } as Record<string, number>,
+          classRestriction: [...tmpl.classRestriction],
+        };
+      })
+      .filter((e): e is NonNullable<typeof e> => e !== null);
+
     this.dungeonMap.show({
-      rooms: this.getDungeonRoomInfos(),
-      currentRoomIndex: this.currentRoomIndex,
+      rooms: this.getAllRoomInfos(),
+      currentRoomId: this.currentRoomId,
+      visitedRoomIds: this.visitedRoomIds,
       party: party.map(c => ({
         name: c.name,
         characterClass: c.characterClass,
@@ -269,11 +333,29 @@ export class GameSession {
       encounterTotalHp,
       gold: this.gold,
       restCost: REST_COST,
+      nextRoomChoices,
+      roomCleared,
+      dungeonComplete,
+      partyEquipment,
+      availableEquipment,
     });
   }
 
+  private getAllRoomInfos(): DungeonRoomInfo[] {
+    const result: DungeonRoomInfo[] = [];
+    for (const [, room] of this.content.rooms) {
+      result.push({
+        id: room.id,
+        name: room.name,
+        description: room.description,
+        recommendedLevel: room.recommendedLevel,
+      });
+    }
+    return result;
+  }
+
   private showEventScreen(): void {
-    const room = this.getCurrentRoom();
+    const room = this.content.rooms.get(this.currentRoomId);
     if (!room) return;
 
     const encounterIndex = this.currentEncounterIndex % room.encounters.length;
@@ -290,22 +372,16 @@ export class GameSession {
       roomName: room.name,
       roomDescription: room.description,
       encounterPreview,
-      roomIndex: this.currentRoomIndex,
-      totalRooms: DUNGEON_ORDER.length,
+      roomIndex: this.visitedRoomIds.length,
+      totalRooms: this.content.rooms.size,
       flavorText: '',
     });
   }
 
-  private getCurrentRoom(): RoomTemplate | null {
-    if (this.currentRoomIndex >= DUNGEON_ORDER.length) return null;
-    const roomId = DUNGEON_ORDER[this.currentRoomIndex];
-    return this.content.rooms.get(roomId) ?? null;
-  }
-
   private startCombatEncounter(): void {
-    const room = this.getCurrentRoom();
+    const room = this.content.rooms.get(this.currentRoomId);
     if (!room) {
-      console.error('No room found for current index:', this.currentRoomIndex);
+      console.error('No room found for current id:', this.currentRoomId);
       return;
     }
 
@@ -313,8 +389,6 @@ export class GameSession {
     const encounter = room.encounters[encounterIndex];
 
     const setup = createEncounterFromRoom(this.content, room.id, encounter.id);
-
-    // Use persistent party (carry HP/MP/XP between combats)
     const party = this.persistentParty ?? setup.party;
     if (!this.persistentParty) {
       this.persistentParty = party;
@@ -361,15 +435,12 @@ export class GameSession {
     room: RoomTemplate
   ): void {
     if (victor === 'party') {
-      // Award XP and check for level ups
       const totalXp = enemies.reduce((sum, e) => sum + e.xpReward, 0);
       const totalGold = enemies.reduce((sum, e) => sum + e.goldReward, 0);
       this.gold += totalGold;
       const levelUps = awardXp(party, totalXp, this.content.classes as any);
 
-      // Generate item drops
       const itemDrops = this.generateItemDrops(enemies);
-      // Add dropped items to first alive party member's inventory
       if (itemDrops.length > 0) {
         const receiver = party.find(c => c.hp > 0) ?? party[0];
         for (const drop of itemDrops) {
@@ -382,7 +453,8 @@ export class GameSession {
         }
       }
 
-      // Prepare reward data for the reward screen
+      const equipDrops = this.generateEquipmentDrops(room);
+
       const rewardLevelUps: RewardLevelUp[] = levelUps.map((lu: LevelUpResult) => ({
         characterName: lu.character.name,
         oldLevel: lu.oldLevel,
@@ -400,6 +472,7 @@ export class GameSession {
         goldEarned: totalGold,
         levelUps: rewardLevelUps,
         itemDrops: itemDrops.map(d => ({ name: d.name, quantity: d.quantity })),
+        equipmentDrops: equipDrops.map(e => ({ name: e.name, rarity: e.rarity })),
         party: party.map(c => ({
           name: c.name,
           hp: c.hp,
@@ -413,61 +486,50 @@ export class GameSession {
         roomName: room.name,
       };
 
-      // Clear combat-only status effects between encounters
       for (const char of party) {
         char.statuses = [];
         char.isGuarding = false;
       }
 
-      // Advance to next encounter/room
       this.currentEncounterIndex++;
       if (this.currentEncounterIndex >= room.encounters.length) {
-        this.currentEncounterIndex = 0;
-        this.currentRoomIndex++;
+        if (!this.visitedRoomIds.includes(room.id)) {
+          this.visitedRoomIds.push(room.id);
+        }
       }
 
       this.game.dispatch('WIN_COMBAT');
     } else {
-      // Reset on defeat
       this.persistentParty = null;
-      this.currentRoomIndex = 0;
+      this.currentRoomId = STARTING_ROOM;
       this.currentEncounterIndex = 0;
+      this.visitedRoomIds = [];
+      this._foundEquipment = [];
       this.game.dispatch('LOSE_COMBAT');
     }
   }
 
   private generateItemDrops(enemies: Enemy[]): { itemId: string; name: string; quantity: number }[] {
     const drops = new Map<string, number>();
-
     const addDrop = (itemId: string, qty: number) => {
       drops.set(itemId, (drops.get(itemId) ?? 0) + qty);
     };
 
     for (const enemy of enemies) {
       const n = enemy.name.toLowerCase();
-
-      // Common enemies drop basic supplies
-      if (n.includes('goblin') || n.includes('wolf') || n.includes('bat')) {
+      if (n.includes('goblin') || n.includes('wolf') || n.includes('bat') || n.includes('bandit')) {
         if (Math.random() < 0.3) addDrop('small-potion', 1);
       }
-
-      // Magic enemies drop MP restoration
-      if (n.includes('mage') || n.includes('shaman') || n.includes('sorcerer') || n.includes('necromancer')) {
+      if (n.includes('mage') || n.includes('shaman') || n.includes('sorcerer') || n.includes('necromancer') || n.includes('wraith') || n.includes('acolyte')) {
         if (Math.random() < 0.4) addDrop('ether', 1);
       }
-
-      // Undead drop antidotes (they often poison)
-      if (n.includes('skeleton') || n.includes('undead') || n.includes('lich')) {
+      if (n.includes('skeleton') || n.includes('undead') || n.includes('lich') || n.includes('spider')) {
         if (Math.random() < 0.2) addDrop('antidote', 1);
       }
-
-      // Boss-tier enemies (high HP) drop better items
       if (enemy.maxHp >= 60) {
         if (Math.random() < 0.5) addDrop('medium-potion', 1);
         if (Math.random() < 0.25) addDrop('strength-tonic', 1);
       }
-
-      // Dragon drops premium items
       if (n.includes('dragon')) {
         if (Math.random() < 0.6) addDrop('large-potion', 1);
         if (Math.random() < 0.4) addDrop('mega-ether', 1);
@@ -479,6 +541,44 @@ export class GameSession {
       name: this.content.items.get(itemId)?.name ?? itemId,
       quantity,
     }));
+  }
+
+  private generateEquipmentDrops(room: RoomTemplate): { id: string; name: string; rarity: string }[] {
+    const drops: { id: string; name: string; rarity: string }[] = [];
+    if (room.dropTable.length === 0) return drops;
+
+    for (const equipId of room.dropTable) {
+      const tmpl = this.content.equipment.get(equipId);
+      if (!tmpl) continue;
+      if (this._foundEquipment.includes(equipId)) continue;
+
+      let dropChance = 0.15;
+      if (tmpl.rarity === 'uncommon') dropChance = 0.10;
+      if (tmpl.rarity === 'rare') dropChance = 0.06;
+
+      if (Math.random() < dropChance) {
+        this._foundEquipment.push(equipId);
+        drops.push({ id: tmpl.id, name: tmpl.name, rarity: tmpl.rarity });
+      }
+    }
+
+    return drops;
+  }
+
+  private applyEquipmentBonuses(char: Character, tmpl: EquipmentTemplate): void {
+    if (tmpl.bonuses.hp) { char.maxHp += tmpl.bonuses.hp; char.hp += tmpl.bonuses.hp; }
+    if (tmpl.bonuses.mp) { char.maxMp += tmpl.bonuses.mp; char.mp += tmpl.bonuses.mp; }
+    if (tmpl.bonuses.attack) char.attack += tmpl.bonuses.attack;
+    if (tmpl.bonuses.armor) char.armor += tmpl.bonuses.armor;
+    if (tmpl.bonuses.speed) char.speed += tmpl.bonuses.speed;
+  }
+
+  private removeEquipmentBonuses(char: Character, tmpl: EquipmentTemplate): void {
+    if (tmpl.bonuses.hp) { char.maxHp -= tmpl.bonuses.hp; char.hp = Math.min(char.hp, char.maxHp); }
+    if (tmpl.bonuses.mp) { char.maxMp -= tmpl.bonuses.mp; char.mp = Math.min(char.mp, char.maxMp); }
+    if (tmpl.bonuses.attack) char.attack -= tmpl.bonuses.attack;
+    if (tmpl.bonuses.armor) char.armor -= tmpl.bonuses.armor;
+    if (tmpl.bonuses.speed) char.speed -= tmpl.bonuses.speed;
   }
 
   private showRewardScreen(): void {

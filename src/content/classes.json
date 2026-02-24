@@ -16,7 +16,9 @@
       "startingSkills": ["basic-attack", "power-strike", "shield-bash"],
       "learnableSkills": [
         { "skillId": "cleave", "level": 3 },
-        { "skillId": "war-cry", "level": 5 }
+        { "skillId": "fortify", "level": 4 },
+        { "skillId": "war-cry", "level": 5 },
+        { "skillId": "execute", "level": 7 }
       ]
     },
     {
@@ -35,7 +37,10 @@
       "startingSkills": ["basic-attack", "fire-bolt", "ice-storm"],
       "learnableSkills": [
         { "skillId": "weaken", "level": 3 },
-        { "skillId": "poison-bolt", "level": 4 }
+        { "skillId": "poison-bolt", "level": 4 },
+        { "skillId": "lightning-bolt", "level": 5 },
+        { "skillId": "blizzard", "level": 6 },
+        { "skillId": "arcane-blast", "level": 7 }
       ]
     },
     {
@@ -54,7 +59,9 @@
       "startingSkills": ["basic-attack", "aimed-shot", "volley"],
       "learnableSkills": [
         { "skillId": "poison-blade", "level": 3 },
-        { "skillId": "backstab", "level": 5 }
+        { "skillId": "backstab", "level": 5 },
+        { "skillId": "snipe", "level": 6 },
+        { "skillId": "rain-of-arrows", "level": 7 }
       ]
     },
     {
@@ -74,7 +81,9 @@
       "learnableSkills": [
         { "skillId": "group-heal", "level": 3 },
         { "skillId": "shield-of-faith", "level": 4 },
-        { "skillId": "regenerate", "level": 5 }
+        { "skillId": "regenerate", "level": 5 },
+        { "skillId": "divine-smite", "level": 6 },
+        { "skillId": "mass-shield", "level": 7 }
       ]
     },
     {
@@ -93,7 +102,9 @@
       "startingSkills": ["basic-attack", "backstab", "poison-blade"],
       "learnableSkills": [
         { "skillId": "aimed-shot", "level": 3 },
-        { "skillId": "weaken", "level": 5 }
+        { "skillId": "shadow-strike", "level": 5 },
+        { "skillId": "smoke-bomb", "level": 6 },
+        { "skillId": "execute", "level": 7 }
       ]
     }
   ]

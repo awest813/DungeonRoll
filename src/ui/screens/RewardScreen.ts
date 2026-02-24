@@ -33,6 +33,7 @@ export interface RewardData {
   goldEarned: number;
   levelUps: RewardLevelUp[];
   itemDrops: RewardItemDrop[];
+  equipmentDrops: { name: string; rarity: string }[];
   party: RewardPartyMember[];
   roomName: string;
 }
@@ -183,6 +184,32 @@ export function createRewardScreen(): RewardScreen {
       `;
     }
 
+    // Equipment drops
+    let equipDropsHtml = '';
+    if (data.equipmentDrops && data.equipmentDrops.length > 0) {
+      const rarityColors: Record<string, string> = { common: '#9E9E9E', uncommon: '#4CAF50', rare: '#FFD54F' };
+      const eqEntries = data.equipmentDrops.map(drop => {
+        const color = rarityColors[drop.rarity] ?? '#9E9E9E';
+        return `<span style="
+          display: inline-block;
+          padding: 5px 12px;
+          margin: 2px 4px;
+          background: rgba(0,0,0,0.2);
+          border: 1px solid ${color}60;
+          border-radius: 4px;
+          font-size: 12px;
+          color: ${color};
+        ">${drop.name} <span style="font-size: 9px; text-transform: uppercase;">${drop.rarity}</span></span>`;
+      }).join('');
+
+      equipDropsHtml = `
+        <div style="margin-bottom: 20px;">
+          <div style="font-size: 12px; color: #FFD54F; letter-spacing: 2px; margin-bottom: 8px;">EQUIPMENT FOUND</div>
+          <div style="display: flex; flex-wrap: wrap; gap: 2px;">${eqEntries}</div>
+        </div>
+      `;
+    }
+
     // Party status
     const partyHtml = data.party.map(member => {
       const hpPercent = (member.hp / member.maxHp) * 100;
@@ -225,6 +252,7 @@ export function createRewardScreen(): RewardScreen {
       ${rewards}
       ${levelUpHtml}
       ${itemDropsHtml}
+      ${equipDropsHtml}
       <div style="font-size: 12px; color: #aaa; letter-spacing: 2px; margin-bottom: 8px;">PARTY STATUS</div>
       ${partyHtml}
       <div style="text-align: center; margin-top: 24px;">

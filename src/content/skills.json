@@ -237,6 +237,168 @@
         "statusDuration": 3,
         "statusValue": 3
       }
+    },
+    {
+      "id": "flame-wave",
+      "name": "Flame Wave",
+      "description": "Deal 2d8 + 130% ATK magical fire damage to all enemies.",
+      "mpCost": 12,
+      "targeting": "all_enemies",
+      "effect": {
+        "damageType": "magical",
+        "diceExpression": "2d8",
+        "statScaling": "attack",
+        "scalingFactor": 1.3
+      }
+    },
+    {
+      "id": "lightning-bolt",
+      "name": "Lightning Bolt",
+      "description": "Deal 2d8 + 140% ATK magical damage to one enemy.",
+      "mpCost": 7,
+      "targeting": "single_enemy",
+      "effect": {
+        "damageType": "magical",
+        "diceExpression": "2d8",
+        "statScaling": "attack",
+        "scalingFactor": 1.4
+      }
+    },
+    {
+      "id": "blizzard",
+      "name": "Blizzard",
+      "description": "Deal 2d6 + ATK magical damage to all enemies. Weakens by 2 for 2 turns.",
+      "mpCost": 14,
+      "targeting": "all_enemies",
+      "effect": {
+        "damageType": "magical",
+        "diceExpression": "2d6",
+        "statScaling": "attack",
+        "scalingFactor": 1.0,
+        "statusApplied": "weakened",
+        "statusDuration": 2,
+        "statusValue": 2
+      }
+    },
+    {
+      "id": "shadow-strike",
+      "name": "Shadow Strike",
+      "description": "Deal 2d6 + 130% ATK physical damage. Weakens target by 2 for 2 turns.",
+      "mpCost": 5,
+      "targeting": "single_enemy",
+      "effect": {
+        "damageType": "physical",
+        "diceExpression": "2d6",
+        "statScaling": "attack",
+        "scalingFactor": 1.3,
+        "statusApplied": "weakened",
+        "statusDuration": 2,
+        "statusValue": 2
+      }
+    },
+    {
+      "id": "snipe",
+      "name": "Snipe",
+      "description": "Deal 2d10 + 180% ATK physical damage to one enemy.",
+      "mpCost": 8,
+      "targeting": "single_enemy",
+      "effect": {
+        "damageType": "physical",
+        "diceExpression": "2d10",
+        "statScaling": "attack",
+        "scalingFactor": 1.8
+      }
+    },
+    {
+      "id": "rain-of-arrows",
+      "name": "Rain of Arrows",
+      "description": "Deal 1d8 + 90% ATK physical damage to all enemies.",
+      "mpCost": 10,
+      "targeting": "all_enemies",
+      "effect": {
+        "damageType": "physical",
+        "diceExpression": "1d8",
+        "statScaling": "attack",
+        "scalingFactor": 0.9
+      }
+    },
+    {
+      "id": "divine-smite",
+      "name": "Divine Smite",
+      "description": "Deal 2d8 + 120% ATK magical damage to one enemy.",
+      "mpCost": 8,
+      "targeting": "single_enemy",
+      "effect": {
+        "damageType": "magical",
+        "diceExpression": "2d8",
+        "statScaling": "attack",
+        "scalingFactor": 1.2
+      }
+    },
+    {
+      "id": "mass-shield",
+      "name": "Mass Shield",
+      "description": "Grant +3 armor to all allies for 2 turns.",
+      "mpCost": 10,
+      "targeting": "all_allies",
+      "effect": {
+        "damageType": "none",
+        "statusApplied": "shielded",
+        "statusDuration": 2,
+        "statusValue": 3
+      }
+    },
+    {
+      "id": "fortify",
+      "name": "Fortify",
+      "description": "Grant +5 armor to self for 3 turns.",
+      "mpCost": 4,
+      "targeting": "self",
+      "effect": {
+        "damageType": "none",
+        "statusApplied": "shielded",
+        "statusDuration": 3,
+        "statusValue": 5
+      }
+    },
+    {
+      "id": "execute",
+      "name": "Execute",
+      "description": "Deal 3d8 + 200% ATK physical damage. Devastating finisher.",
+      "mpCost": 8,
+      "targeting": "single_enemy",
+      "effect": {
+        "damageType": "physical",
+        "diceExpression": "3d8",
+        "statScaling": "attack",
+        "scalingFactor": 2.0
+      }
+    },
+    {
+      "id": "smoke-bomb",
+      "name": "Smoke Bomb",
+      "description": "Weaken all enemies by 3 for 2 turns.",
+      "mpCost": 6,
+      "targeting": "all_enemies",
+      "effect": {
+        "damageType": "none",
+        "statusApplied": "weakened",
+        "statusDuration": 2,
+        "statusValue": 3
+      }
+    },
+    {
+      "id": "arcane-blast",
+      "name": "Arcane Blast",
+      "description": "Deal 3d6 + 160% ATK magical damage to one enemy.",
+      "mpCost": 10,
+      "targeting": "single_enemy",
+      "effect": {
+        "damageType": "magical",
+        "diceExpression": "3d6",
+        "statScaling": "attack",
+        "scalingFactor": 1.6
+      }
     }
   ]
 }

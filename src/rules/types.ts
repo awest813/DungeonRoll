@@ -30,6 +30,7 @@ export interface Character {
   statuses: StatusEffect[];
   skillIds: string[];
   inventory: InventoryEntry[];
+  equipment: EquippedItem[];
 }
 
 export interface InventoryEntry {
@@ -93,6 +94,14 @@ export interface SkillEffect {
   statusDuration?: number;
   statusValue?: number;
   healDice?: string;
+}
+
+export type EquipmentSlot = 'weapon' | 'armor' | 'accessory';
+export type EquipmentRarity = 'common' | 'uncommon' | 'rare';
+
+export interface EquippedItem {
+  equipmentId: string;
+  slot: EquipmentSlot;
 }
 
 export type ItemEffectType = 'heal' | 'mp_restore' | 'buff' | 'cure_status' | 'damage';

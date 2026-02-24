@@ -1,4 +1,6 @@
-import { Character, Enemy, CharacterClass, SkillTargeting, SkillDamageType, StatusType, ItemEffectType } from '../../rules/types';
+import { Character, Enemy, CharacterClass, SkillTargeting, SkillDamageType, StatusType, ItemEffectType, EquipmentSlot, EquipmentRarity } from '../../rules/types';
+
+export type EnemyAIRole = 'basic' | 'tank' | 'bruiser' | 'caster' | 'healer' | 'sniper' | 'boss';
 
 export interface EnemyTemplate {
   id: string;
@@ -11,6 +13,7 @@ export interface EnemyTemplate {
   xpReward: number;
   goldReward: number;
   skillIds: string[];
+  aiRole: EnemyAIRole;
 }
 
 export interface SkillTemplate {
@@ -74,6 +77,16 @@ export interface PartyTemplate {
   skillIds: string[];
 }
 
+export interface EquipmentTemplate {
+  id: string;
+  name: string;
+  slot: EquipmentSlot;
+  rarity: EquipmentRarity;
+  description: string;
+  bonuses: Partial<Record<'hp' | 'mp' | 'attack' | 'armor' | 'speed', number>>;
+  classRestriction: CharacterClass[];
+}
+
 export interface RoomEncounterTemplate {
   id: string;
   enemyIds: string[];
@@ -83,15 +96,17 @@ export interface RoomTemplate {
   id: string;
   name: string;
   description: string;
-  party: PartyTemplate[];
   encounters: RoomEncounterTemplate[];
   recommendedLevel: number;
+  nextRooms: string[];
+  dropTable: string[];
 }
 
 export interface GameContent {
   enemies: Map<string, EnemyTemplate>;
   skills: Map<string, SkillTemplate>;
   items: Map<string, ItemTemplate>;
+  equipment: Map<string, EquipmentTemplate>;
   rooms: Map<string, RoomTemplate>;
   classes: Map<CharacterClass, ClassTemplate>;
 }

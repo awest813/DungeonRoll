@@ -10,7 +10,8 @@
       "speed": 4,
       "xpReward": 15,
       "goldReward": 5,
-      "skillIds": ["basic-attack"]
+      "skillIds": ["basic-attack"],
+      "aiRole": "basic"
     },
     {
       "id": "goblin-chief",
@@ -22,7 +23,8 @@
       "speed": 5,
       "xpReward": 40,
       "goldReward": 15,
-      "skillIds": ["basic-attack", "power-strike"]
+      "skillIds": ["basic-attack", "power-strike"],
+      "aiRole": "bruiser"
     },
     {
       "id": "goblin-shaman",
@@ -34,7 +36,21 @@
       "speed": 3,
       "xpReward": 35,
       "goldReward": 12,
-      "skillIds": ["basic-attack", "poison-bolt"]
+      "skillIds": ["basic-attack", "poison-bolt"],
+      "aiRole": "caster"
+    },
+    {
+      "id": "goblin-berserker",
+      "name": "Goblin Berserker",
+      "hp": 30,
+      "mp": 4,
+      "attack": 6,
+      "armor": 1,
+      "speed": 6,
+      "xpReward": 30,
+      "goldReward": 10,
+      "skillIds": ["basic-attack", "power-strike"],
+      "aiRole": "bruiser"
     },
     {
       "id": "skeleton-warrior",
@@ -46,7 +62,8 @@
       "speed": 2,
       "xpReward": 25,
       "goldReward": 8,
-      "skillIds": ["basic-attack"]
+      "skillIds": ["basic-attack"],
+      "aiRole": "tank"
     },
     {
       "id": "skeleton-archer",
@@ -58,7 +75,8 @@
       "speed": 5,
       "xpReward": 28,
       "goldReward": 10,
-      "skillIds": ["basic-attack", "aimed-shot"]
+      "skillIds": ["basic-attack", "aimed-shot"],
+      "aiRole": "sniper"
     },
     {
       "id": "skeleton-mage",
@@ -70,7 +88,21 @@
       "speed": 3,
       "xpReward": 45,
       "goldReward": 18,
-      "skillIds": ["basic-attack", "fire-bolt", "weaken"]
+      "skillIds": ["basic-attack", "fire-bolt", "weaken"],
+      "aiRole": "caster"
+    },
+    {
+      "id": "skeleton-champion",
+      "name": "Skeleton Champion",
+      "hp": 50,
+      "mp": 5,
+      "attack": 6,
+      "armor": 5,
+      "speed": 3,
+      "xpReward": 55,
+      "goldReward": 22,
+      "skillIds": ["basic-attack", "power-strike", "shield-bash"],
+      "aiRole": "tank"
     },
     {
       "id": "dire-wolf",
@@ -82,7 +114,151 @@
       "speed": 8,
       "xpReward": 30,
       "goldReward": 5,
-      "skillIds": ["basic-attack"]
+      "skillIds": ["basic-attack"],
+      "aiRole": "bruiser"
+    },
+    {
+      "id": "giant-spider",
+      "name": "Giant Spider",
+      "hp": 28,
+      "mp": 8,
+      "attack": 5,
+      "armor": 2,
+      "speed": 7,
+      "xpReward": 28,
+      "goldReward": 8,
+      "skillIds": ["basic-attack", "poison-blade"],
+      "aiRole": "basic"
+    },
+    {
+      "id": "cave-bat-swarm",
+      "name": "Cave Bat Swarm",
+      "hp": 18,
+      "mp": 0,
+      "attack": 4,
+      "armor": 0,
+      "speed": 9,
+      "xpReward": 12,
+      "goldReward": 3,
+      "skillIds": ["basic-attack"],
+      "aiRole": "basic"
+    },
+    {
+      "id": "stone-golem",
+      "name": "Stone Golem",
+      "hp": 70,
+      "mp": 0,
+      "attack": 6,
+      "armor": 8,
+      "speed": 1,
+      "xpReward": 60,
+      "goldReward": 20,
+      "skillIds": ["basic-attack", "power-strike"],
+      "aiRole": "tank"
+    },
+    {
+      "id": "fire-elemental",
+      "name": "Fire Elemental",
+      "hp": 40,
+      "mp": 30,
+      "attack": 7,
+      "armor": 2,
+      "speed": 5,
+      "xpReward": 50,
+      "goldReward": 20,
+      "skillIds": ["basic-attack", "fire-bolt", "flame-wave"],
+      "aiRole": "caster"
+    },
+    {
+      "id": "ice-wraith",
+      "name": "Ice Wraith",
+      "hp": 35,
+      "mp": 25,
+      "attack": 5,
+      "armor": 3,
+      "speed": 6,
+      "xpReward": 45,
+      "goldReward": 18,
+      "skillIds": ["basic-attack", "ice-storm", "weaken"],
+      "aiRole": "caster"
+    },
+    {
+      "id": "shadow-assassin",
+      "name": "Shadow Assassin",
+      "hp": 30,
+      "mp": 8,
+      "attack": 8,
+      "armor": 1,
+      "speed": 9,
+      "xpReward": 45,
+      "goldReward": 22,
+      "skillIds": ["basic-attack", "backstab", "poison-blade"],
+      "aiRole": "sniper"
+    },
+    {
+      "id": "orc-warrior",
+      "name": "Orc Warrior",
+      "hp": 48,
+      "mp": 0,
+      "attack": 6,
+      "armor": 4,
+      "speed": 3,
+      "xpReward": 35,
+      "goldReward": 12,
+      "skillIds": ["basic-attack", "power-strike"],
+      "aiRole": "bruiser"
+    },
+    {
+      "id": "orc-shaman",
+      "name": "Orc Shaman",
+      "hp": 35,
+      "mp": 25,
+      "attack": 4,
+      "armor": 2,
+      "speed": 3,
+      "xpReward": 40,
+      "goldReward": 15,
+      "skillIds": ["basic-attack", "heal", "war-cry"],
+      "aiRole": "healer"
+    },
+    {
+      "id": "orc-warlord",
+      "name": "Orc Warlord",
+      "hp": 75,
+      "mp": 10,
+      "attack": 8,
+      "armor": 5,
+      "speed": 4,
+      "xpReward": 70,
+      "goldReward": 30,
+      "skillIds": ["basic-attack", "power-strike", "cleave", "war-cry"],
+      "aiRole": "boss"
+    },
+    {
+      "id": "bandit-thug",
+      "name": "Bandit Thug",
+      "hp": 25,
+      "mp": 0,
+      "attack": 4,
+      "armor": 2,
+      "speed": 4,
+      "xpReward": 18,
+      "goldReward": 12,
+      "skillIds": ["basic-attack"],
+      "aiRole": "basic"
+    },
+    {
+      "id": "bandit-marksman",
+      "name": "Bandit Marksman",
+      "hp": 22,
+      "mp": 5,
+      "attack": 6,
+      "armor": 1,
+      "speed": 5,
+      "xpReward": 25,
+      "goldReward": 14,
+      "skillIds": ["basic-attack", "aimed-shot"],
+      "aiRole": "sniper"
     },
     {
       "id": "cave-troll",
@@ -94,7 +270,8 @@
       "speed": 2,
       "xpReward": 75,
       "goldReward": 30,
-      "skillIds": ["basic-attack", "power-strike"]
+      "skillIds": ["basic-attack", "power-strike"],
+      "aiRole": "boss"
     },
     {
       "id": "dark-knight",
@@ -106,7 +283,8 @@
       "speed": 4,
       "xpReward": 65,
       "goldReward": 25,
-      "skillIds": ["basic-attack", "power-strike", "weaken"]
+      "skillIds": ["basic-attack", "power-strike", "weaken"],
+      "aiRole": "bruiser"
     },
     {
       "id": "necromancer",
@@ -118,7 +296,8 @@
       "speed": 4,
       "xpReward": 80,
       "goldReward": 35,
-      "skillIds": ["basic-attack", "fire-bolt", "poison-bolt", "weaken"]
+      "skillIds": ["basic-attack", "fire-bolt", "poison-bolt", "weaken"],
+      "aiRole": "boss"
     },
     {
       "id": "dragon-whelp",
@@ -130,7 +309,34 @@
       "speed": 6,
       "xpReward": 120,
       "goldReward": 60,
-      "skillIds": ["basic-attack", "fire-bolt", "power-strike"]
+      "skillIds": ["basic-attack", "fire-bolt", "flame-wave", "power-strike"],
+      "aiRole": "boss"
+    },
+    {
+      "id": "mimic",
+      "name": "Mimic",
+      "hp": 45,
+      "mp": 5,
+      "attack": 7,
+      "armor": 4,
+      "speed": 3,
+      "xpReward": 55,
+      "goldReward": 40,
+      "skillIds": ["basic-attack", "power-strike", "poison-blade"],
+      "aiRole": "bruiser"
+    },
+    {
+      "id": "lich-acolyte",
+      "name": "Lich Acolyte",
+      "hp": 38,
+      "mp": 35,
+      "attack": 5,
+      "armor": 2,
+      "speed": 4,
+      "xpReward": 50,
+      "goldReward": 25,
+      "skillIds": ["basic-attack", "fire-bolt", "poison-bolt", "heal"],
+      "aiRole": "healer"
     }
   ]
 }

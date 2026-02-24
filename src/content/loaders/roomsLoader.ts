@@ -1,5 +1,4 @@
-import { RoomTemplate, PartyTemplate } from './types';
-import { CharacterClass } from '../../rules/types';
+import { RoomTemplate } from './types';
 import {
   expectArray,
   expectNumber,
@@ -7,31 +6,6 @@ import {
   expectString,
   expectUniqueId,
 } from './validation';
-
-function loadParty(rawParty: unknown, path: string): PartyTemplate[] {
-  const party = expectArray(rawParty, path);
-
-  return party.map((member, index) => {
-    const memberPath = `${path}[${index}]`;
-    const row = expectObject(member, memberPath);
-
-    const skillIdsRaw = expectArray(row.skillIds, `${memberPath}.skillIds`);
-    const skillIds = skillIdsRaw.map((s, i) => expectString(s, `${memberPath}.skillIds[${i}]`));
-
-    return {
-      id: expectString(row.id, `${memberPath}.id`),
-      name: expectString(row.name, `${memberPath}.name`),
-      characterClass: expectString(row.characterClass, `${memberPath}.characterClass`) as CharacterClass,
-      hp: expectNumber(row.hp, `${memberPath}.hp`),
-      mp: expectNumber(row.mp, `${memberPath}.mp`),
-      attack: expectNumber(row.attack, `${memberPath}.attack`),
-      armor: expectNumber(row.armor, `${memberPath}.armor`),
-      speed: expectNumber(row.speed, `${memberPath}.speed`),
-      level: expectNumber(row.level, `${memberPath}.level`),
-      skillIds,
-    };
-  });
-}
 
 function loadEncounters(rawEncounters: unknown, path: string): RoomTemplate['encounters'] {
   const encounters = expectArray(rawEncounters, path);
@@ -60,18 +34,25 @@ export function loadRooms(rawContent: unknown): Map<string, RoomTemplate> {
     const path = `rooms.json.rooms[${index}]`;
     const row = expectObject(entry, path);
 
+    const nextRoomsRaw = row.nextRooms !== undefined
+      ? expectArray(row.nextRooms, `${path}.nextRooms`)
+      : [];
+    const nextRooms = nextRoomsRaw.map((s, i) => expectString(s, `${path}.nextRooms[${i}]`));
+
+    const dropTableRaw = row.dropTable !== undefined
+      ? expectArray(row.dropTable, `${path}.dropTable`)
+      : [];
+    const dropTable = dropTableRaw.map((s, i) => expectString(s, `${path}.dropTable[${i}]`));
+
     const room: RoomTemplate = {
       id: expectString(row.id, `${path}.id`),
       name: expectString(row.name, `${path}.name`),
       description: expectString(row.description, `${path}.description`),
       recommendedLevel: expectNumber(row.recommendedLevel, `${path}.recommendedLevel`),
-      party: loadParty(row.party, `${path}.party`),
       encounters: loadEncounters(row.encounters, `${path}.encounters`),
+      nextRooms,
+      dropTable,
     };
-
-    if (room.party.length === 0) {
-      throw new Error(`${path}.party must include at least one character`);
-    }
 
     if (room.encounters.length === 0) {
       throw new Error(`${path}.encounters must include at least one encounter`);
