@@ -16,6 +16,8 @@ import { createRewardScreen, RewardScreen, RewardData, RewardLevelUp } from '../
 import { createDefeatScreen, DefeatScreen, DefeatData } from '../../ui/screens/DefeatScreen';
 import { createPartySelectScreen, PartySelectScreen, PartyClassInfo } from '../../ui/screens/PartySelectScreen';
 import { createEventScreen, EventScreen } from '../../ui/screens/EventScreen';
+import { createCharacterDetailPanel, CharacterDetailPanel, CharacterDetailData } from '../../ui/screens/CharacterDetailPanel';
+import { createInventoryScreen, InventoryScreen, InventoryData } from '../../ui/screens/InventoryScreen';
 
 export interface GameSessionConfig {
   scene: BABYLON.Scene;
@@ -39,6 +41,8 @@ export class GameSession {
   private eventScreen: EventScreen;
   private rewardScreen: RewardScreen;
   private defeatScreen: DefeatScreen;
+  private characterDetail: CharacterDetailPanel;
+  private inventoryScreen: InventoryScreen;
   private combatUI?: CombatUI;
   private combatController?: CombatUIController;
   private combatRenderer?: CombatRenderer;
@@ -68,6 +72,8 @@ export class GameSession {
     this.eventScreen = createEventScreen();
     this.rewardScreen = createRewardScreen();
     this.defeatScreen = createDefeatScreen();
+    this.characterDetail = createCharacterDetailPanel();
+    this.inventoryScreen = createInventoryScreen();
 
     this.wireScreenCallbacks();
   }
@@ -153,6 +159,26 @@ export class GameSession {
       }
       char.equipment = char.equipment.filter(e => e.slot !== slot);
       this.showDungeonMap();
+    });
+
+    this.dungeonMap.onViewCharacter((charIndex: number) => {
+      this.showCharacterDetail(charIndex);
+    });
+
+    this.dungeonMap.onOpenInventory(() => {
+      this.showInventory();
+    });
+
+    this.characterDetail.onClose(() => {
+      this.characterDetail.hide();
+    });
+
+    this.inventoryScreen.onClose(() => {
+      this.inventoryScreen.hide();
+    });
+
+    this.inventoryScreen.onUseItem((itemId: string, charIndex: number) => {
+      this.useItem(itemId, charIndex);
     });
 
     this.eventScreen.onProceed(() => {
@@ -248,6 +274,8 @@ export class GameSession {
     this.eventScreen.hide();
     this.rewardScreen.hide();
     this.defeatScreen.hide();
+    this.characterDetail.hide();
+    this.inventoryScreen.hide();
     this.hideCombat();
   }
 
@@ -579,6 +607,157 @@ export class GameSession {
     if (tmpl.bonuses.attack) char.attack -= tmpl.bonuses.attack;
     if (tmpl.bonuses.armor) char.armor -= tmpl.bonuses.armor;
     if (tmpl.bonuses.speed) char.speed -= tmpl.bonuses.speed;
+  }
+
+  private showCharacterDetail(charIndex: number): void {
+    const char = this.persistentParty?.[charIndex];
+    if (!char) return;
+
+    // Compute equipment bonuses
+    const equipmentBonuses: Record<string, number> = {};
+    const equipmentDetails: CharacterDetailData['equipment'] = [];
+    for (const eq of char.equipment) {
+      const tmpl = this.content.equipment.get(eq.equipmentId);
+      if (tmpl) {
+        for (const [stat, value] of Object.entries(tmpl.bonuses)) {
+          if (value) equipmentBonuses[stat] = (equipmentBonuses[stat] ?? 0) + value;
+        }
+        equipmentDetails.push({
+          slot: tmpl.slot,
+          name: tmpl.name,
+          rarity: tmpl.rarity,
+          description: tmpl.description,
+          bonuses: { ...tmpl.bonuses } as Record<string, number>,
+        });
+      }
+    }
+
+    // Build skill list
+    const skills = char.skillIds
+      .filter(id => id !== 'basic-attack')
+      .map(id => {
+        const tmpl = this.content.skills.get(id);
+        return {
+          name: tmpl?.name ?? id,
+          description: tmpl?.description ?? '',
+          mpCost: tmpl?.mpCost ?? 0,
+          targeting: tmpl?.targeting ?? 'single_enemy',
+        };
+      });
+
+    this.characterDetail.show({
+      name: char.name,
+      characterClass: char.characterClass,
+      level: char.level,
+      hp: char.hp,
+      maxHp: char.maxHp,
+      mp: char.mp,
+      maxMp: char.maxMp,
+      attack: char.attack,
+      armor: char.armor,
+      speed: char.speed,
+      xp: char.xp,
+      xpToNext: char.xpToNext,
+      skills,
+      equipment: equipmentDetails,
+      equipmentBonuses,
+      isDead: char.hp <= 0,
+    });
+  }
+
+  private showInventory(): void {
+    const party = this.persistentParty ?? [];
+
+    // Aggregate all items from all party members
+    const itemMap = new Map<string, number>();
+    for (const char of party) {
+      for (const entry of char.inventory) {
+        itemMap.set(entry.itemId, (itemMap.get(entry.itemId) ?? 0) + entry.quantity);
+      }
+    }
+
+    const items = Array.from(itemMap.entries()).map(([itemId, quantity]) => {
+      const tmpl = this.content.items.get(itemId);
+      const effectLabel = tmpl ? this.getItemEffectLabel(tmpl) : '';
+      return {
+        itemId,
+        name: tmpl?.name ?? itemId,
+        description: tmpl?.description ?? '',
+        quantity,
+        effectLabel,
+        canUse: !!tmpl,
+      };
+    });
+
+    const invData: InventoryData = {
+      items,
+      party: party.map(c => ({
+        name: c.name,
+        hp: c.hp,
+        maxHp: c.maxHp,
+        mp: c.mp,
+        maxMp: c.maxMp,
+        alive: c.hp > 0,
+      })),
+      gold: this.gold,
+    };
+
+    this.inventoryScreen.show(invData);
+  }
+
+  private getItemEffectLabel(tmpl: { effect: { type: string; value: number } }): string {
+    switch (tmpl.effect.type) {
+      case 'heal': return `Restores ${tmpl.effect.value} HP`;
+      case 'mp_restore': return `Restores ${tmpl.effect.value} MP`;
+      case 'buff': return `+${tmpl.effect.value} ATK buff`;
+      case 'cure_status': return 'Cures status ailments';
+      case 'damage': return `Deals ${tmpl.effect.value} damage`;
+      default: return '';
+    }
+  }
+
+  private useItem(itemId: string, charIndex: number): void {
+    const party = this.persistentParty;
+    if (!party) return;
+    const char = party[charIndex];
+    if (!char || char.hp <= 0) return;
+
+    const tmpl = this.content.items.get(itemId);
+    if (!tmpl) return;
+
+    // Find and consume the item from any party member's inventory
+    let consumed = false;
+    for (const member of party) {
+      const entry = member.inventory.find(e => e.itemId === itemId);
+      if (entry && entry.quantity > 0) {
+        entry.quantity--;
+        if (entry.quantity <= 0) {
+          member.inventory = member.inventory.filter(e => e.itemId !== itemId);
+        }
+        consumed = true;
+        break;
+      }
+    }
+    if (!consumed) return;
+
+    // Apply item effect
+    switch (tmpl.effect.type) {
+      case 'heal':
+        char.hp = Math.min(char.maxHp, char.hp + tmpl.effect.value);
+        break;
+      case 'mp_restore':
+        char.mp = Math.min(char.maxMp, char.mp + tmpl.effect.value);
+        break;
+      case 'buff':
+        char.attack += tmpl.effect.value;
+        break;
+      case 'cure_status':
+        char.statuses = [];
+        break;
+    }
+
+    // Re-show inventory with updated data
+    this.showInventory();
   }
 
   private showRewardScreen(): void {

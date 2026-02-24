@@ -51,6 +51,8 @@ export interface DungeonMapScreen {
   onChooseRoom(callback: (roomId: string) => void): void;
   onEquip(callback: (charIndex: number, equipmentId: string) => void): void;
   onUnequip(callback: (charIndex: number, slot: string) => void): void;
+  onViewCharacter(callback: (charIndex: number) => void): void;
+  onOpenInventory(callback: () => void): void;
 }
 
 const RARITY_COLORS: Record<string, string> = {
@@ -112,6 +114,8 @@ export function createDungeonMapScreen(): DungeonMapScreen {
   let chooseRoomCallback: ((roomId: string) => void) | null = null;
   let equipCallback: ((charIndex: number, equipmentId: string) => void) | null = null;
   let unequipCallback: ((charIndex: number, slot: string) => void) | null = null;
+  let viewCharCallback: ((charIndex: number) => void) | null = null;
+  let inventoryCallback: (() => void) | null = null;
 
   function render(data: DungeonMapData) {
     const currentRoom = data.rooms.find(r => r.id === data.currentRoomId);
@@ -193,16 +197,21 @@ export function createDungeonMapScreen(): DungeonMapScreen {
       }).join('<span style="margin: 0 4px; color: #333;">|</span>');
 
       return `
-        <div style="
+        <div class="party-card" data-char-idx="${idx}" style="
           padding: 10px 12px; margin-bottom: 6px;
           background: ${isDead ? 'rgba(60, 30, 30, 0.2)' : 'rgba(0, 50, 0, 0.2)'};
           border: 1px solid ${isDead ? '#555' : '#4CAF50'};
           border-radius: 5px;
+          cursor: pointer;
+          transition: border-color 0.2s, box-shadow 0.2s;
           ${isDead ? 'opacity: 0.5;' : ''}
         ">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
             <span style="font-weight: bold; font-size: 13px;">${member.name}${isDead ? ' <span style="color: #f44336; font-size: 10px;">[DEAD]</span>' : ''}</span>
-            <span style="font-size: 11px; color: #aaa;">Lv${member.level} ${member.characterClass.toUpperCase()}</span>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span style="font-size: 11px; color: #aaa;">Lv${member.level} ${member.characterClass.toUpperCase()}</span>
+              <span style="font-size: 9px; color: #666; letter-spacing: 1px;">DETAILS &#9656;</span>
+            </div>
           </div>
           <div style="display: flex; gap: 12px;">
             <div style="flex: 1;">
@@ -245,19 +254,34 @@ export function createDungeonMapScreen(): DungeonMapScreen {
           <span style="font-size: 11px; color: #FFD54F; letter-spacing: 2px;">GOLD</span>
           <span style="font-size: 20px; font-weight: bold; color: #FFE082; margin-left: 10px;">${data.gold}</span>
         </div>
-        <button id="rest-btn" style="
-          padding: 8px 18px;
-          font-size: 12px;
-          font-family: 'Courier New', monospace;
-          font-weight: bold;
-          letter-spacing: 2px;
-          border: 1px solid ${canRest ? '#4CAF50' : '#555'};
-          border-radius: 4px;
-          background: ${canRest ? 'rgba(76, 175, 80, 0.15)' : 'rgba(40, 40, 40, 0.4)'};
-          color: ${canRest ? '#4CAF50' : '#666'};
-          cursor: ${canRest ? 'pointer' : 'not-allowed'};
-          transition: all 0.2s;
-        " ${canRest ? '' : 'disabled'}>REST (${data.restCost}g) +50% HP/MP</button>
+        <div style="display: flex; gap: 8px; align-items: center;">
+          <button id="inventory-btn" style="
+            padding: 8px 14px;
+            font-size: 12px;
+            font-family: 'Courier New', monospace;
+            font-weight: bold;
+            letter-spacing: 2px;
+            border: 1px solid #CE93D8;
+            border-radius: 4px;
+            background: rgba(206, 147, 216, 0.1);
+            color: #CE93D8;
+            cursor: pointer;
+            transition: all 0.2s;
+          ">ITEMS</button>
+          <button id="rest-btn" style="
+            padding: 8px 18px;
+            font-size: 12px;
+            font-family: 'Courier New', monospace;
+            font-weight: bold;
+            letter-spacing: 2px;
+            border: 1px solid ${canRest ? '#4CAF50' : '#555'};
+            border-radius: 4px;
+            background: ${canRest ? 'rgba(76, 175, 80, 0.15)' : 'rgba(40, 40, 40, 0.4)'};
+            color: ${canRest ? '#4CAF50' : '#666'};
+            cursor: ${canRest ? 'pointer' : 'not-allowed'};
+            transition: all 0.2s;
+          " ${canRest ? '' : 'disabled'}>REST (${data.restCost}g) +50% HP/MP</button>
+        </div>
       </div>
     `;
 
@@ -518,7 +542,8 @@ export function createDungeonMapScreen(): DungeonMapScreen {
       btn.addEventListener('mouseleave', () => {
         el.style.background = 'rgba(0, 0, 0, 0.3)';
       });
-      btn.addEventListener('click', () => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
         if (equipCallback && charIdx >= 0 && equipId) equipCallback(charIdx, equipId);
       });
     });
@@ -528,10 +553,44 @@ export function createDungeonMapScreen(): DungeonMapScreen {
       const el = btn as HTMLElement;
       const charIdx = parseInt(el.dataset.char ?? '-1', 10);
       const slot = el.dataset.slot ?? '';
-      btn.addEventListener('click', () => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
         if (unequipCallback && charIdx >= 0 && slot) unequipCallback(charIdx, slot);
       });
     });
+
+    // Wire up party card clicks (view character details)
+    contentArea.querySelectorAll('.party-card').forEach(card => {
+      const el = card as HTMLElement;
+      const charIdx = parseInt(el.dataset.charIdx ?? '-1', 10);
+      el.addEventListener('mouseenter', () => {
+        el.style.borderColor = '#66BB6A';
+        el.style.boxShadow = '0 0 8px rgba(76, 175, 80, 0.15)';
+      });
+      el.addEventListener('mouseleave', () => {
+        el.style.borderColor = data.party[charIdx]?.hp <= 0 ? '#555' : '#4CAF50';
+        el.style.boxShadow = 'none';
+      });
+      el.addEventListener('click', () => {
+        if (viewCharCallback && charIdx >= 0) viewCharCallback(charIdx);
+      });
+    });
+
+    // Wire up inventory button
+    const invBtn = document.getElementById('inventory-btn');
+    if (invBtn) {
+      invBtn.addEventListener('mouseenter', () => {
+        invBtn.style.background = 'rgba(206, 147, 216, 0.25)';
+        invBtn.style.boxShadow = '0 0 10px rgba(206, 147, 216, 0.2)';
+      });
+      invBtn.addEventListener('mouseleave', () => {
+        invBtn.style.background = 'rgba(206, 147, 216, 0.1)';
+        invBtn.style.boxShadow = 'none';
+      });
+      invBtn.addEventListener('click', () => {
+        if (inventoryCallback) inventoryCallback();
+      });
+    }
   }
 
   return {
@@ -570,6 +629,12 @@ export function createDungeonMapScreen(): DungeonMapScreen {
     },
     onUnequip(callback) {
       unequipCallback = callback;
+    },
+    onViewCharacter(callback) {
+      viewCharCallback = callback;
+    },
+    onOpenInventory(callback) {
+      inventoryCallback = callback;
     },
   };
 }
