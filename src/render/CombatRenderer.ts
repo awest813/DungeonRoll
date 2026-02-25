@@ -119,6 +119,7 @@ export class CombatRenderer {
   private bobTime: number = 0;
   private disposed: boolean = false;
   private activeTimers: Set<number> = new Set();
+  private activeParticles: Set<BABYLON.ParticleSystem> = new Set();
 
   constructor(scene: BABYLON.Scene) {
     this.scene = scene;
@@ -984,6 +985,8 @@ export class CombatRenderer {
 
     ps.targetStopDuration = 0.25;
     ps.disposeOnStop = true;
+    this.activeParticles.add(ps);
+    ps.onDisposeObservable.addOnce(() => this.activeParticles.delete(ps));
     ps.start();
   }
 
@@ -1010,6 +1013,8 @@ export class CombatRenderer {
     ps.blendMode = BABYLON.ParticleSystem.BLENDMODE_ADD;
     ps.targetStopDuration = 0.15;
     ps.disposeOnStop = true;
+    this.activeParticles.add(ps);
+    ps.onDisposeObservable.addOnce(() => this.activeParticles.delete(ps));
     ps.start();
   }
 
@@ -1032,6 +1037,8 @@ export class CombatRenderer {
     ps.blendMode = BABYLON.ParticleSystem.BLENDMODE_STANDARD;
     ps.targetStopDuration = 0.35;
     ps.disposeOnStop = true;
+    this.activeParticles.add(ps);
+    ps.onDisposeObservable.addOnce(() => this.activeParticles.delete(ps));
     ps.start();
 
     // Red spark burst
@@ -1055,6 +1062,8 @@ export class CombatRenderer {
     sparks.blendMode = BABYLON.ParticleSystem.BLENDMODE_ADD;
     sparks.targetStopDuration = 0.15;
     sparks.disposeOnStop = true;
+    this.activeParticles.add(sparks);
+    sparks.onDisposeObservable.addOnce(() => this.activeParticles.delete(sparks));
     sparks.start();
   }
 
@@ -1176,11 +1185,18 @@ export class CombatRenderer {
       this.idleBobObserver = null;
     }
 
+    // Dispose active particle systems
+    this.activeParticles.forEach(ps => {
+      ps.stop();
+      ps.dispose();
+    });
+    this.activeParticles.clear();
+
     this.unitMeshes.forEach(unitMesh => {
-      unitMesh.bodyParts.forEach(part => part.dispose());
-      unitMesh.nameLabel.dispose();
-      unitMesh.hpBar.dispose();
-      unitMesh.hpBarBackground.dispose();
+      unitMesh.bodyParts.forEach(part => part.dispose(false, true));
+      unitMesh.nameLabel.dispose(false, true);
+      unitMesh.hpBar.dispose(false, true);
+      unitMesh.hpBarBackground.dispose(false, true);
       unitMesh.mesh.dispose();
     });
     this.unitMeshes.clear();

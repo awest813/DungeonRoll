@@ -58,6 +58,13 @@ Track of what's done and what comes next.
 - **Enemy AI dead-target fallback** — when all party dead, enemy AI now guards instead of attacking a dead target
 - **`pickRandom`/`pickWeakest` empty-array guard** — both throw explicit errors on empty arrays instead of silently returning `undefined`
 
+### Performance Fixes Applied
+- **CombatRenderer material/texture disposal** — `clear()` now uses `dispose(false, true)` to dispose materials and textures with meshes, preventing GPU memory leaks across combats
+- **Particle system tracking** — active particle systems tracked via `Set` and force-disposed on `clear()`, preventing orphaned particles when combat ends mid-animation
+- **Old renderer cleanup** — `GameSession.startCombatEncounter` now calls `clear()` on the previous renderer before creating a new one
+- **Combat status deduplication** — replaced `hasStatus()` + `.find()` double-lookup pattern with single `getStatus()` call (5 sites in `combat.ts`)
+- **CSS hover replacement** — combat UI button hover effects moved from per-render JS listeners to a single `<style>` tag with `:hover` pseudo-class
+
 ---
 
 ## In Progress
@@ -127,5 +134,4 @@ Track of what's done and what comes next.
 | Dead party members | Stay dead for the run; no revive items | Add revive mechanics (Phoenix Down-style) in Phase 7 |
 | Enemy skill targeting | Boss `war-cry` uses `all_allies`; `targetId` is ignored | Full skill animation routing per targeting type |
 | Equipment bonus precision | Truthiness guard skips 0-value bonuses | Explicit `!== undefined` check if 0-value items are ever added |
-| Event listener cleanup | Combat UI buttons re-attached on each render | Refactor to use event delegation in Phase 8 |
-| Buff items in combat | Items with `type: buff` permanently raise `char.attack` | Track as a timed status in Phase 6 |
+| Buff items in combat | Items with `type: buff` permanently raise `char.attack` (capped at +20) | Track as a timed status in Phase 6 |

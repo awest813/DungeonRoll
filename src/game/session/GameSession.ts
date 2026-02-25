@@ -450,6 +450,11 @@ export class GameSession {
       this.combatUI = createCombatUI();
     }
 
+    // Dispose previous renderer to prevent material/particle leaks
+    if (this.combatRenderer) {
+      this.combatRenderer.clear();
+    }
+
     const combatRenderer = new CombatRenderer(this.scene);
     this.combatRenderer = combatRenderer;
     combatRenderer.createPartyMeshes(party);

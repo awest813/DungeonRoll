@@ -3,7 +3,7 @@
 import { Character, Enemy, CombatAction, CombatState, DamageResult } from './types';
 import { rollDiceExpression } from './dice';
 import { CombatLog } from './log';
-import { addStatus, hasStatus, removeStatus, tickStatuses } from './status';
+import { addStatus, getStatus, hasStatus, removeStatus, tickStatuses } from './status';
 import { SkillTemplate, GameContent } from '../content/loaders/types';
 
 export type Combatant = Character | Enemy;
@@ -99,14 +99,10 @@ export class CombatEngine {
 
     const roll = rollDiceExpression('1d6');
     let attackPower = attacker.attack;
-    if (hasStatus(attacker, 'buffed')) {
-      const buff = attacker.statuses.find(s => s.type === 'buffed');
-      attackPower += buff?.value ?? 0;
-    }
-    if (hasStatus(attacker, 'weakened')) {
-      const debuff = attacker.statuses.find(s => s.type === 'weakened');
-      attackPower = Math.max(0, attackPower - (debuff?.value ?? 0));
-    }
+    const atkBuff = getStatus(attacker, 'buffed');
+    if (atkBuff) attackPower += atkBuff.value ?? 0;
+    const atkDebuff = getStatus(attacker, 'weakened');
+    if (atkDebuff) attackPower = Math.max(0, attackPower - (atkDebuff.value ?? 0));
     const rawDamage = roll + attackPower;
 
     const damageResult = this.calculateDamage(rawDamage, target);
@@ -205,14 +201,10 @@ export class CombatEngine {
       rawDamage += Math.floor(stat * effect.scalingFactor);
     }
 
-    if (hasStatus(actor, 'buffed')) {
-      const buff = actor.statuses.find(s => s.type === 'buffed');
-      rawDamage += buff?.value ?? 0;
-    }
-    if (hasStatus(actor, 'weakened')) {
-      const debuff = actor.statuses.find(s => s.type === 'weakened');
-      rawDamage = Math.max(0, rawDamage - (debuff?.value ?? 0));
-    }
+    const skillBuff = getStatus(actor, 'buffed');
+    if (skillBuff) rawDamage += skillBuff.value ?? 0;
+    const skillDebuff = getStatus(actor, 'weakened');
+    if (skillDebuff) rawDamage = Math.max(0, rawDamage - (skillDebuff.value ?? 0));
 
     const armorReduction = effect.damageType === 'magical' ? Math.floor(target.armor / 2) : target.armor;
     const damageResult = this.calculateDamageWithArmor(rawDamage, target, armorReduction);
@@ -368,10 +360,8 @@ export class CombatEngine {
     if (target.isGuarding) {
       armor *= 2;
     }
-    if (hasStatus(target, 'shielded')) {
-      const shield = target.statuses.find(s => s.type === 'shielded');
-      armor += shield?.value ?? 0;
-    }
+    const shield = getStatus(target, 'shielded');
+    if (shield) armor += shield.value ?? 0;
 
     const isCritical = rollDiceExpression('1d20') === 20;
     const effectiveArmor = isCritical ? Math.floor(armor / 2) : armor;

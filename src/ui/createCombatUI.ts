@@ -183,6 +183,17 @@ export function createCombatUI(): CombatUI {
   contentEl.appendChild(leftPanel);
   contentEl.appendChild(rightPanel);
 
+  // CSS hover effects — avoids per-render JS listener overhead
+  const style = document.createElement('style');
+  style.textContent = `
+    #combat-ui .action-btn:not([disabled]):hover,
+    #combat-ui .skill-btn:not([disabled]):hover,
+    #combat-ui .item-btn:not([disabled]):hover {
+      opacity: 0.8;
+      transform: scale(1.02);
+    }
+  `;
+  container.appendChild(style);
   container.appendChild(titleEl);
   container.appendChild(contentEl);
   document.body.appendChild(container);
@@ -463,17 +474,6 @@ export function createCombatUI(): CombatUI {
       });
     });
 
-    // Hover effects for enabled buttons
-    actionButtons.querySelectorAll('.action-btn:not([disabled]), .skill-btn:not([disabled]), .item-btn:not([disabled])').forEach(btn => {
-      btn.addEventListener('mouseenter', () => {
-        (btn as HTMLElement).style.opacity = '0.8';
-        (btn as HTMLElement).style.transform = 'scale(1.02)';
-      });
-      btn.addEventListener('mouseleave', () => {
-        (btn as HTMLElement).style.opacity = '1';
-        (btn as HTMLElement).style.transform = 'scale(1)';
-      });
-    });
   }
 
   renderActionButtons();
