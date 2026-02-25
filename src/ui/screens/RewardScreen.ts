@@ -67,10 +67,10 @@ export function createRewardScreen(): RewardScreen {
     width: 600px;
     max-height: 85vh;
     overflow-y: auto;
-    background: rgba(20, 25, 20, 0.95);
-    border: 2px solid #4CAF50;
-    border-radius: 10px;
-    animation: fadeIn 0.4s ease-out;
+    background: rgba(20, 20, 35, 0.95);
+    border: 2px solid rgba(76, 175, 80, 0.6);
+    border-radius: 6px;
+    animation: screenFadeIn 0.4s ease-out;
   `;
 
   const header = document.createElement('div');
@@ -78,8 +78,8 @@ export function createRewardScreen(): RewardScreen {
     background: linear-gradient(135deg, rgba(76, 175, 80, 0.4), rgba(255, 165, 0, 0.2));
     padding: 24px;
     text-align: center;
-    border-bottom: 2px solid #4CAF50;
-    border-radius: 8px 8px 0 0;
+    border-bottom: 2px solid rgba(76, 175, 80, 0.6);
+    border-radius: 5px 5px 0 0;
   `;
   header.innerHTML = `
     <div style="font-size: 36px; font-weight: bold; color: #ffa500; text-shadow: 0 0 15px rgba(255, 165, 0, 0.4); letter-spacing: 6px;">

@@ -33,12 +33,12 @@ export function createDefeatScreen(): DefeatScreen {
 
   const panel = document.createElement('div');
   panel.style.cssText = `
-    width: 500px;
+    width: 560px;
     background: rgba(30, 20, 20, 0.95);
     border: 2px solid #f44336;
-    border-radius: 10px;
+    border-radius: 6px;
     text-align: center;
-    animation: fadeIn 0.6s ease-out;
+    animation: screenFadeIn 0.4s ease-out;
   `;
 
   const header = document.createElement('div');
@@ -46,7 +46,7 @@ export function createDefeatScreen(): DefeatScreen {
     background: linear-gradient(135deg, rgba(244, 67, 54, 0.3), rgba(30, 10, 10, 0.9));
     padding: 30px;
     border-bottom: 2px solid #f44336;
-    border-radius: 8px 8px 0 0;
+    border-radius: 5px 5px 0 0;
   `;
   header.innerHTML = `
     <div style="font-size: 42px; font-weight: bold; color: #f44336; text-shadow: 0 0 20px rgba(244, 67, 54, 0.5); letter-spacing: 6px;">

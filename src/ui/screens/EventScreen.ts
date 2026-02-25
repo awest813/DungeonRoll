@@ -46,10 +46,10 @@ export function createEventScreen(): EventScreen {
   const panel = document.createElement('div');
   panel.style.cssText = `
     width: 560px;
-    background: rgba(20, 20, 30, 0.95);
-    border: 2px solid #ffa500;
-    border-radius: 10px;
-    animation: fadeIn 0.6s ease-out;
+    background: rgba(20, 20, 35, 0.95);
+    border: 2px solid rgba(255, 165, 0, 0.7);
+    border-radius: 6px;
+    animation: screenFadeIn 0.4s ease-out;
   `;
 
   const contentArea = document.createElement('div');
@@ -69,7 +69,7 @@ export function createEventScreen(): EventScreen {
         background: linear-gradient(135deg, rgba(255, 165, 0, 0.2), rgba(20, 20, 30, 0.9));
         padding: 24px;
         border-bottom: 1px solid rgba(255, 165, 0, 0.3);
-        border-radius: 8px 8px 0 0;
+        border-radius: 5px 5px 0 0;
         text-align: center;
       ">
         <div style="font-size: 11px; color: #888; letter-spacing: 3px; margin-bottom: 6px;">

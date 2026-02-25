@@ -233,18 +233,18 @@ export function createDungeonMapScreen(): DungeonMapScreen {
     max-height: 90vh;
     overflow-y: auto;
     background: rgba(20, 20, 35, 0.95);
-    border: 2px solid #4CAF50;
-    border-radius: 10px;
+    border: 2px solid rgba(76, 175, 80, 0.6);
+    border-radius: 6px;
     padding: 0;
-    animation: fadeIn 0.4s ease-out;
+    animation: screenFadeIn 0.4s ease-out;
   `;
 
   const header = document.createElement('div');
   header.style.cssText = `
     background: linear-gradient(135deg, rgba(76, 175, 80, 0.3), rgba(30, 30, 50, 0.9));
     padding: 20px 24px;
-    border-bottom: 2px solid #4CAF50;
-    border-radius: 8px 8px 0 0;
+    border-bottom: 2px solid rgba(76, 175, 80, 0.6);
+    border-radius: 5px 5px 0 0;
     text-align: center;
   `;
 

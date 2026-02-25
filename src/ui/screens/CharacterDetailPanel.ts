@@ -85,10 +85,10 @@ export function createCharacterDetailPanel(): CharacterDetailPanel {
     max-height: 88vh;
     overflow-y: auto;
     background: rgba(20, 20, 35, 0.98);
-    border: 2px solid #4CAF50;
-    border-radius: 10px;
+    border: 2px solid rgba(76, 175, 80, 0.6);
+    border-radius: 6px;
     padding: 0;
-    animation: fadeIn 0.3s ease-out;
+    animation: screenFadeIn 0.35s ease-out;
   `;
 
   overlay.appendChild(panel);

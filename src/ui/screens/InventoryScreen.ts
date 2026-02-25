@@ -54,10 +54,10 @@ export function createInventoryScreen(): InventoryScreen {
     max-height: 88vh;
     overflow-y: auto;
     background: rgba(20, 20, 35, 0.98);
-    border: 2px solid #CE93D8;
-    border-radius: 10px;
+    border: 2px solid rgba(206, 147, 216, 0.7);
+    border-radius: 6px;
     padding: 0;
-    animation: fadeIn 0.3s ease-out;
+    animation: screenFadeIn 0.35s ease-out;
   `;
 
   overlay.appendChild(panel);

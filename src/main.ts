@@ -3,12 +3,14 @@ import { createScene } from './render/createScene';
 import { GameState } from './game/stateMachine';
 import { GameSession } from './game/session/GameSession';
 import { loadGameContent } from './content/loaders';
+import { injectGlobalStyles } from './ui/theme';
 
 const isDev = import.meta.env.DEV;
 
 console.log('Dungeon Roll - JRPG Engine starting...');
 
 window.addEventListener('DOMContentLoaded', () => {
+  injectGlobalStyles();
   const loadingDiv = document.getElementById('loading');
   if (loadingDiv) {
     setTimeout(() => {
