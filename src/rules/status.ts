@@ -13,9 +13,11 @@ export function addStatus(
   duration: number,
   value?: number
 ): void {
-  // Remove existing status of same type
-  holder.statuses = holder.statuses.filter(s => s.type !== type);
+  // Keep whichever has longer remaining duration to prevent downgrades
+  const existing = holder.statuses.find(s => s.type === type);
+  if (existing && existing.duration >= duration) return;
 
+  holder.statuses = holder.statuses.filter(s => s.type !== type);
   holder.statuses.push({
     type,
     duration,

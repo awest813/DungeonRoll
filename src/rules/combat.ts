@@ -369,7 +369,8 @@ export class CombatEngine {
     const effectiveArmor = isCritical ? Math.floor(armor / 2) : armor;
 
     const blocked = Math.min(rawDamage, effectiveArmor);
-    const finalDamage = Math.max(0, rawDamage - blocked);
+    // Guarantee minimum 1 damage per hit so attacks always feel impactful
+    const finalDamage = rawDamage > 0 ? Math.max(1, rawDamage - blocked) : 0;
 
     return {
       rawDamage,

@@ -743,6 +743,24 @@ export class GameSession {
     const tmpl = this.content.items.get(itemId);
     if (!tmpl) return;
 
+    // Pre-validate: reject items that would have no effect
+    switch (tmpl.effect.type) {
+      case 'heal':
+        if (char.hp >= char.maxHp) return;
+        break;
+      case 'mp_restore':
+        if (char.mp >= char.maxMp) return;
+        break;
+      case 'buff': {
+        const MAX_ITEM_ATTACK_BUFF = 20;
+        if (char.attackBuff >= MAX_ITEM_ATTACK_BUFF) return;
+        break;
+      }
+      case 'cure_status':
+        if (char.statuses.length === 0) return;
+        break;
+    }
+
     // Find and consume the item from any party member's inventory
     let consumed = false;
     for (const member of party) {
@@ -767,7 +785,6 @@ export class GameSession {
         char.mp = Math.min(char.maxMp, char.mp + tmpl.effect.value);
         break;
       case 'buff': {
-        // Cap total item-granted attack buff at 20 to prevent infinite stacking
         const MAX_ITEM_ATTACK_BUFF = 20;
         const available = Math.max(0, MAX_ITEM_ATTACK_BUFF - char.attackBuff);
         const gain = Math.min(tmpl.effect.value, available);
