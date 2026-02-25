@@ -337,6 +337,8 @@ export class CombatEngine {
       }
       case 'self':
         return [actor];
+      default:
+        return [];
     }
   }
 

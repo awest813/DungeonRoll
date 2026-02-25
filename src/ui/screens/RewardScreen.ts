@@ -225,7 +225,7 @@ export function createRewardScreen(): RewardScreen {
           ${member.hp <= 0 ? 'opacity: 0.4;' : ''}
         ">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
-            <span style="font-weight: bold; font-size: 12px;">${member.name} <span style="color: #aaa;">Lv${member.level}</span></span>
+            <span style="font-weight: bold; font-size: 12px;">${member.name} <span style="color: #aaa;">Lv${member.level}</span>${member.hp <= 0 ? ' <span style="color: #f44336; font-size: 10px;">[DEAD]</span>' : ''}</span>
             <span style="font-size: 10px; color: ${hpColor};">HP ${member.hp}/${member.maxHp}</span>
           </div>
           <div style="display: flex; gap: 8px;">

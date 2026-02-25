@@ -1,7 +1,6 @@
 import * as BABYLON from 'babylonjs';
 import { createScene } from './render/createScene';
 import { GameState } from './game/stateMachine';
-import { runCombatTest } from './rules/testHarness';
 import { GameSession } from './game/session/GameSession';
 import { loadGameContent } from './content/loaders';
 
@@ -55,11 +54,12 @@ window.addEventListener('DOMContentLoaded', () => {
   console.log('Game initialized. Current state:', session.getCurrentState());
 
   if (isDev) {
-    console.log('\n=== Running Combat Test Harness ===');
-    runCombatTest();
-
-    (window as any).runCombatTest = runCombatTest;
-    console.log('Tip: Run runCombatTest() in console to test combat again');
+    import('./rules/testHarness').then(({ runCombatTest }) => {
+      console.log('\n=== Running Combat Test Harness ===');
+      runCombatTest();
+      (window as any).runCombatTest = runCombatTest;
+      console.log('Tip: Run runCombatTest() in console to test combat again');
+    });
   }
 
   console.log('=== Initialization Complete ===');
