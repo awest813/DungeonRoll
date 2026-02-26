@@ -10,6 +10,9 @@ export interface StatusEffect {
   value?: number;
 }
 
+// Crimson Shroud element system
+export type ElementType = 'fire' | 'ice' | 'lightning' | 'holy' | 'dark' | 'physical' | 'none';
+
 export type CharacterClass = 'knight' | 'mage' | 'ranger' | 'cleric' | 'rogue';
 
 export interface Character {
@@ -54,6 +57,8 @@ export interface Enemy {
   skillIds: string[];
   xpReward: number;
   goldReward: number;
+  weakness?: ElementType;
+  resistance?: ElementType;
 }
 
 export type ActionType = 'attack' | 'guard' | 'skill' | 'item';
@@ -64,15 +69,32 @@ export interface CombatAction {
   targetId?: string;
   skillId?: string;
   itemId?: string;
+  bonusDiceCount?: number; // how many bonus dice to spend from the pool
+}
+
+// Detailed roll result for Crimson Shroud dice display
+export interface DiceRollResult {
+  dice: number[];        // individual die results
+  bonusDice: number[];   // bonus dice spent
+  modifier: number;      // flat modifier (ATK stat, etc.)
+  total: number;         // sum of everything
+  expression: string;    // e.g. "2d6+5 +1 bonus"
 }
 
 export interface CombatState {
   party: Character[];
   enemies: Enemy[];
   turnNumber: number;
+  roundNumber: number;
   isActive: boolean;
   turnOrder: string[];
   currentActorIndex: number;
+  // Crimson Shroud bonus dice pool
+  bonusDicePool: number;   // number of d6 bonus dice available (party shared)
+  maxBonusDice: number;    // cap (default 10)
+  // Element chain tracking
+  lastElement: ElementType;
+  elementChainCount: number;
 }
 
 export interface DamageResult {
@@ -81,6 +103,9 @@ export interface DamageResult {
   blocked: number;
   isCritical: boolean;
   isWeak: boolean;
+  isResisted: boolean;
+  element: ElementType;
+  diceRoll?: DiceRollResult;
 }
 
 export type SkillTargeting = 'single_enemy' | 'all_enemies' | 'single_ally' | 'all_allies' | 'self';

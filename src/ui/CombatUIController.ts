@@ -1,6 +1,7 @@
-// Bridges the rules engine with the combat UI and 3D renderer
+// Crimson Shroud-style turn order controller - individual speed-based turns
+// Bonus dice pool, element chains, individual actor management
 
-import { Character, Enemy } from '../rules/types';
+import { Character, Enemy, CombatAction, ElementType } from '../rules/types';
 import { CombatEngine } from '../rules/combat';
 import { CombatLog } from '../rules/log';
 import { CombatUI } from './createCombatUI';
@@ -17,21 +18,6 @@ const STATUS_LABELS: Record<string, string> = {
   regenerating: '[RGN]',
 };
 
-function getSkillEffectType(skillId: string): string {
-  const id = skillId.toLowerCase();
-  if (id.includes('fire') || id.includes('flame')) return 'fire';
-  if (id.includes('ice') || id.includes('frost') || id.includes('blizzard')) return 'ice';
-  if (id.includes('lightning') || id.includes('thunder') || id.includes('storm')) return 'ice';
-  if (id.includes('heal') || id.includes('regenerat')) return 'heal';
-  if (id.includes('poison') || id.includes('venom')) return 'poison';
-  if (id.includes('holy') || id.includes('light') || id.includes('smite')) return 'holy';
-  if (id.includes('buff') || id.includes('war-cry') || id.includes('shield-of-faith')) return 'buff';
-  if (id.includes('weaken') || id.includes('curse')) return 'poison';
-  if (id.includes('backstab') || id.includes('power-strike') || id.includes('cleave') || id.includes('shield-bash')) return 'fire';
-  if (id.includes('aimed') || id.includes('volley')) return 'lightning';
-  return 'magic';
-}
-
 export class CombatUIController {
   private combat: CombatEngine;
   private log: CombatLog;
@@ -42,7 +28,8 @@ export class CombatUIController {
   private renderer?: CombatRenderer;
   private onCombatEndCallback?: (victor: 'party' | 'enemy') => void;
   private hasCombatEnded: boolean = false;
-  private selectedHeroIndex: number = 0;
+  private currentHeroIndex: number = -1;  // -1 = no party member acting
+  private bonusDiceToSpend: number = 0;
   private gold: number = 0;
 
   constructor(
@@ -66,23 +53,17 @@ export class CombatUIController {
     this.onCombatEndCallback = onCombatEnd;
     this.gold = gold;
 
-    // Initialize selected hero to first alive
-    const firstAlive = party.findIndex(c => c.hp > 0);
-    this.selectedHeroIndex = firstAlive >= 0 ? firstAlive : 0;
-
     this.setupEventHandlers();
+    this.combat.startCombat();
     this.refresh();
+    this.proceedToNextTurn();
   }
 
   private setupEventHandlers() {
-    // Track hero selection changes to update skills/items display
-    this.ui.onHeroSelect((heroIndex) => {
-      this.selectedHeroIndex = heroIndex;
-      this.refreshSkillsAndItems();
-    });
-
+    // Attack action
     this.ui.onAttack((heroIndex, targetEnemyIndex) => {
-      const hero = this.party[heroIndex];
+      if (this.currentHeroIndex < 0) return;
+      const hero = this.party[this.currentHeroIndex];
       const target = this.enemies[targetEnemyIndex];
       if (!hero || hero.hp <= 0 || !target || target.hp <= 0) return;
 
@@ -93,6 +74,7 @@ export class CombatUIController {
             type: 'attack',
             actorId: hero.id,
             targetId: target.id,
+            bonusDiceCount: this.bonusDiceToSpend,
           });
           const damage = hpBefore - target.hp;
           if (damage > 0) {
@@ -102,22 +84,23 @@ export class CombatUIController {
           } else {
             this.renderer!.showDamageNumber(target.id, 0, 'miss');
           }
-          this.refresh();
-          this.checkCombatEnd();
+          this.advanceAndProceed();
         });
       } else {
         this.combat.executeAction({
           type: 'attack',
           actorId: hero.id,
           targetId: target.id,
+          bonusDiceCount: this.bonusDiceToSpend,
         });
-        this.refresh();
-        this.checkCombatEnd();
+        this.advanceAndProceed();
       }
     });
 
+    // Guard action
     this.ui.onGuard((heroIndex) => {
-      const hero = this.party[heroIndex];
+      if (this.currentHeroIndex < 0) return;
+      const hero = this.party[this.currentHeroIndex];
       if (!hero || hero.hp <= 0) return;
 
       this.combat.executeAction({
@@ -127,11 +110,13 @@ export class CombatUIController {
       if (this.renderer) {
         this.renderer.playGuardAnimation(hero.id, true);
       }
-      this.refresh();
+      this.advanceAndProceed();
     });
 
+    // Skill action
     this.ui.onSkill((heroIndex, skillId, targetIndex, isAlly) => {
-      const hero = this.party[heroIndex];
+      if (this.currentHeroIndex < 0) return;
+      const hero = this.party[this.currentHeroIndex];
       if (!hero || hero.hp <= 0) return;
 
       const skill = this.content.skills.get(skillId);
@@ -147,10 +132,7 @@ export class CombatUIController {
         targetId = hero.id;
       }
 
-      const effectType = getSkillEffectType(skillId);
-
       const executeSkill = () => {
-        // Snapshot HP before skill
         const enemyHpBefore = new Map(this.enemies.map(e => [e.id, e.hp]));
         const partyHpBefore = new Map(this.party.map(c => [c.id, c.hp]));
 
@@ -159,6 +141,7 @@ export class CombatUIController {
           actorId: hero.id,
           skillId,
           targetId,
+          bonusDiceCount: this.bonusDiceToSpend,
         });
 
         if (this.renderer) {
@@ -182,27 +165,27 @@ export class CombatUIController {
             }
           });
         }
-        this.refresh();
-        this.checkCombatEnd();
+        this.advanceAndProceed();
       };
 
-      // Play casting animation with particles, then resolve skill
+      // Use skill element for renderer effect type
+      const effectType = skill.element ?? 'none';
       if (this.renderer) {
-        this.renderer.playSkillAnimation(hero.id, targetId, effectType, executeSkill);
+        this.renderer.playSkillAnimation(hero.id, targetId, effectType as string, executeSkill);
       } else {
         executeSkill();
       }
     });
 
+    // Item action
     this.ui.onItem((heroIndex, itemId, targetIndex) => {
-      const hero = this.party[heroIndex];
+      if (this.currentHeroIndex < 0) return;
+      const hero = this.party[this.currentHeroIndex];
       if (!hero || hero.hp <= 0) return;
 
-      // Prefer selected target but fall back to caster if target is dead
       const targetCandidate = this.party[targetIndex];
       const targetId = (targetCandidate && targetCandidate.hp > 0) ? targetCandidate.id : hero.id;
 
-      // Snapshot HP for floating numbers
       const hpBefore = new Map(this.party.map(c => [c.id, c.hp]));
 
       this.combat.executeAction({
@@ -224,84 +207,76 @@ export class CombatUIController {
           }
         });
       }
-      this.refresh();
+      this.advanceAndProceed();
     });
 
-    this.ui.onEndTurn(() => {
-      this.enemyTurn();
+    // Bonus dice selection
+    this.ui.onBonusDiceChange((count) => {
+      this.bonusDiceToSpend = Math.max(0, Math.min(count, this.combat.getBonusDicePool()));
     });
   }
 
-  startTurn() {
-    this.combat.startTurn();
-    // Update 3D HP bars after poison/regen ticks
-    if (this.renderer) {
-      this.party.forEach(c => this.renderer!.updateUnitHP(c.id, c.hp, c.maxHp));
-      this.enemies.forEach(e => this.renderer!.updateUnitHP(e.id, e.hp, e.maxHp));
-    }
-    this.refresh();
-    // Poison/regen can kill — check if combat ended
+  private proceedToNextTurn(): void {
     if (this.combat.isOver()) {
       this.checkCombatEnd();
+      return;
+    }
+
+    const actor = this.combat.getCurrentActor();
+    if (!actor) return;
+
+    this.bonusDiceToSpend = 0;
+    this.refresh();
+
+    if (this.combat.isPartyMember(actor.id)) {
+      // Party member's turn - enable UI for this hero
+      const heroIndex = this.party.findIndex(c => c.id === actor.id);
+      if (heroIndex >= 0) {
+        this.currentHeroIndex = heroIndex;
+        this.ui.setActionsEnabled(true);
+        this.ui.setCurrentActor(actor.id);
+      }
+    } else {
+      // Enemy's turn - execute AI with animation delay
+      this.currentHeroIndex = -1;
+      this.ui.setActionsEnabled(false);
+      this.ui.setCurrentActor(actor.id);
+      setTimeout(() => this.executeEnemyTurn(actor as Enemy), 500);
     }
   }
 
-  private enemyTurn() {
-    const aliveEnemies = this.enemies.filter(e => e.hp > 0);
-    if (aliveEnemies.length === 0) return;
+  private executeEnemyTurn(enemy: Enemy): void {
+    if (this.combat.isOver()) {
+      this.checkCombatEnd();
+      return;
+    }
 
     const aliveParty = this.party.filter(c => c.hp > 0);
-    if (aliveParty.length === 0) return;
+    if (aliveParty.length === 0) {
+      this.checkCombatEnd();
+      return;
+    }
 
-    this.ui.setActionsEnabled(false);
+    // Get AI decision
+    const templateId = enemy.id.replace(/-\d+$/, '');
+    const template = this.content.enemies.get(templateId);
+    const aiRole: EnemyAIRole = template?.aiRole ?? 'basic';
+    const action = decideEnemyAction(enemy, aiRole, this.party, this.enemies, this.content);
 
-    let enemyIndex = 0;
-    const processNextEnemy = () => {
-      if (enemyIndex >= aliveEnemies.length || this.combat.isOver()) {
-        this.ui.setActionsEnabled(true);
-        this.startTurn();
-        this.checkCombatEnd();
-        return;
-      }
-
-      const enemy = aliveEnemies[enemyIndex];
-      enemyIndex++;
-
-      const currentAliveParty = this.party.filter(c => c.hp > 0);
-      if (currentAliveParty.length === 0) {
-        this.refresh();
-        this.checkCombatEnd();
-        return;
-      }
-
-      // Look up AI role from template (strip instance suffix like "-1")
-      const templateId = enemy.id.replace(/-\d+$/, '');
-      const template = this.content.enemies.get(templateId);
-      const aiRole: EnemyAIRole = template?.aiRole ?? 'basic';
-
-      const action = decideEnemyAction(enemy, aiRole, this.party, this.enemies, this.content);
-
+    const executeAction = () => {
       if (action.type === 'guard') {
         this.combat.executeAction(action);
         if (this.renderer) {
           this.renderer.playGuardAnimation(enemy.id, true);
         }
         this.refresh();
-        setTimeout(processNextEnemy, 300);
-        return;
-      }
-
-      if (action.type === 'skill' && action.skillId) {
+        setTimeout(() => this.advanceAndProceed(), 300);
+      } else if (action.type === 'skill' && action.skillId) {
         const skill = this.content.skills.get(action.skillId);
         if (!skill) {
-          // Fallback to basic attack
-          const fallbackTarget = currentAliveParty[Math.floor(Math.random() * currentAliveParty.length)];
-          this.doEnemyBasicAttack(enemy, fallbackTarget, processNextEnemy);
-          return;
-        }
-
-        const effectType = getSkillEffectType(skill.id);
-        const resolveSkill = () => {
+          // Fallback to attack
+          this.executeEnemyAttack(enemy, aliveParty[0]);
+        } else {
           const partyHpBefore = new Map(this.party.map(c => [c.id, c.hp]));
           const enemyHpBefore = new Map(this.enemies.map(e => [e.id, e.hp]));
 
@@ -317,7 +292,6 @@ export class CombatUIController {
                 this.renderer!.showDamageNumber(c.id, diff, 'damage');
               }
             });
-            // Show heals on enemy allies (healer/boss AI)
             this.enemies.forEach(e => {
               const before = enemyHpBefore.get(e.id) ?? e.hp;
               const diff = e.hp - before;
@@ -328,27 +302,28 @@ export class CombatUIController {
             });
           }
           this.refresh();
-          setTimeout(processNextEnemy, 300);
-        };
-
-        if (this.renderer) {
-          this.renderer.playSkillAnimation(enemy.id, action.targetId, effectType, resolveSkill);
-        } else {
-          resolveSkill();
+          setTimeout(() => this.advanceAndProceed(), 300);
         }
-        return;
+      } else {
+        // Basic attack
+        const target = aliveParty.find(c => c.id === action.targetId && c.hp > 0) ?? aliveParty[0];
+        this.executeEnemyAttack(enemy, target);
       }
-
-      // Default: basic attack
-      const target = this.party.find(c => c.id === action.targetId && c.hp > 0)
-        ?? currentAliveParty[0];
-      this.doEnemyBasicAttack(enemy, target, processNextEnemy);
     };
 
-    processNextEnemy();
+    if (action.type === 'skill' && action.skillId) {
+      const skill = this.content.skills.get(action.skillId);
+      if (skill && this.renderer) {
+        const effectType = skill.element ?? 'none';
+        this.renderer.playSkillAnimation(enemy.id, action.targetId, effectType as string, executeAction);
+        return;
+      }
+    }
+
+    executeAction();
   }
 
-  private doEnemyBasicAttack(enemy: Enemy, target: Character, next: () => void) {
+  private executeEnemyAttack(enemy: Enemy, target: Character): void {
     if (this.renderer) {
       this.renderer.playAttackAnimation(enemy.id, target.id, () => {
         const hpBefore = target.hp;
@@ -369,7 +344,7 @@ export class CombatUIController {
           this.renderer.playGuardAnimation(target.id, false);
         }
         this.refresh();
-        setTimeout(next, 300);
+        setTimeout(() => this.advanceAndProceed(), 300);
       });
     } else {
       this.combat.executeAction({
@@ -378,11 +353,24 @@ export class CombatUIController {
         targetId: target.id,
       });
       this.refresh();
-      setTimeout(next, 100);
+      setTimeout(() => this.advanceAndProceed(), 100);
     }
   }
 
-  private refresh() {
+  private advanceAndProceed(): void {
+    this.refresh();
+    if (this.combat.isOver()) {
+      this.checkCombatEnd();
+      return;
+    }
+    this.combat.advanceTurn();
+    this.proceedToNextTurn();
+  }
+
+  private refresh(): void {
+    const state = this.combat.getState();
+
+    // Update party display
     this.ui.updateParty(
       this.party.map(char => ({
         name: char.name,
@@ -396,6 +384,7 @@ export class CombatUIController {
       }))
     );
 
+    // Update enemy display with weakness/resistance
     this.ui.updateEnemies(
       this.enemies.map(enemy => ({
         id: enemy.id,
@@ -404,11 +393,15 @@ export class CombatUIController {
         maxHp: enemy.maxHp,
         isGuarding: enemy.isGuarding,
         statuses: enemy.statuses.map(s => STATUS_LABELS[s.type] ?? s.type),
+        weakness: enemy.weakness,
+        resistance: enemy.resistance,
       }))
     );
 
+    // Update skills and items for current hero
     this.refreshSkillsAndItems();
 
+    // Update renderer
     if (this.renderer) {
       this.party.forEach(char => {
         this.renderer!.playGuardAnimation(char.id, char.isGuarding);
@@ -424,21 +417,36 @@ export class CombatUIController {
       });
     }
 
-    // Turn counter and gold
-    this.ui.updateTurnCounter(this.combat.getState().turnNumber);
+    // Update UI state
+    this.ui.updateTurnCounter(state.turnNumber);
     this.ui.updateGold(this.gold);
+    this.ui.updateBonusDice(state.bonusDicePool, state.maxBonusDice);
+    this.ui.updateElementChain(state.lastElement, state.elementChainCount);
 
+    // Update turn order bar
+    const turnOrderEntries = state.turnOrder.map((id, i) => {
+      const combatant = this.combat.findCombatant(id);
+      return {
+        id,
+        name: combatant?.name ?? id,
+        isParty: this.combat.isPartyMember(id),
+        isCurrent: i === state.currentActorIndex,
+        isDead: !combatant || combatant.hp <= 0,
+      };
+    });
+    this.ui.updateTurnOrder(turnOrderEntries);
+
+    // Update log
     const messages = this.log.getMessages();
     const lastMessages = messages.slice(Math.max(0, messages.length - 30));
     this.ui.clearLog();
     lastMessages.forEach(msg => this.ui.addLogEntry(msg));
   }
 
-  private refreshSkillsAndItems() {
-    // Use the selected hero for skills/items display (not always first alive)
-    const selectedHero = this.party[this.selectedHeroIndex];
-    const hero = (selectedHero && selectedHero.hp > 0) ? selectedHero : this.party.find(c => c.hp > 0);
-    if (!hero) return;
+  private refreshSkillsAndItems(): void {
+    if (this.currentHeroIndex < 0) return;
+    const hero = this.party[this.currentHeroIndex];
+    if (!hero || hero.hp <= 0) return;
 
     const skills = hero.skillIds
       .map(id => this.content.skills.get(id))
@@ -449,6 +457,7 @@ export class CombatUIController {
         mpCost: s.mpCost,
         description: s.description,
         targeting: s.targeting,
+        element: s.element,
       }));
     this.ui.updateSkills(skills, hero.mp);
 
@@ -465,7 +474,7 @@ export class CombatUIController {
     this.ui.updateItems(items);
   }
 
-  private checkCombatEnd() {
+  private checkCombatEnd(): void {
     if (this.combat.isOver() && !this.hasCombatEnded) {
       this.hasCombatEnded = true;
       this.ui.setActionsEnabled(false);

@@ -6,6 +6,7 @@
       "description": "Deal 1d6 + ATK physical damage to one target.",
       "mpCost": 0,
       "targeting": "single_enemy",
+      "element": "physical",
       "effect": {
         "damageType": "physical",
         "diceExpression": "1d6",
@@ -19,6 +20,7 @@
       "description": "Deal 2d6 + 150% ATK physical damage to one enemy.",
       "mpCost": 4,
       "targeting": "single_enemy",
+      "element": "physical",
       "effect": {
         "damageType": "physical",
         "diceExpression": "2d6",
@@ -32,6 +34,7 @@
       "description": "Deal 1d6 + 80% ATK physical damage to all enemies.",
       "mpCost": 6,
       "targeting": "all_enemies",
+      "element": "physical",
       "effect": {
         "damageType": "physical",
         "diceExpression": "1d6",
@@ -45,6 +48,7 @@
       "description": "Deal 1d4 + 50% ATK damage. Stuns target for 1 turn.",
       "mpCost": 5,
       "targeting": "single_enemy",
+      "element": "physical",
       "effect": {
         "damageType": "physical",
         "diceExpression": "1d4",
@@ -57,9 +61,10 @@
     {
       "id": "fire-bolt",
       "name": "Fire Bolt",
-      "description": "Deal 2d6 + 120% ATK magical damage to one enemy.",
+      "description": "Deal 2d6 + 120% ATK fire damage to one enemy.",
       "mpCost": 5,
       "targeting": "single_enemy",
+      "element": "fire",
       "effect": {
         "damageType": "magical",
         "diceExpression": "2d6",
@@ -70,9 +75,10 @@
     {
       "id": "ice-storm",
       "name": "Ice Storm",
-      "description": "Deal 1d8 + ATK magical damage to all enemies.",
+      "description": "Deal 1d8 + ATK ice damage to all enemies.",
       "mpCost": 10,
       "targeting": "all_enemies",
+      "element": "ice",
       "effect": {
         "damageType": "magical",
         "diceExpression": "1d8",
@@ -86,6 +92,7 @@
       "description": "Reduce target's ATK by 3 for 3 turns.",
       "mpCost": 4,
       "targeting": "single_enemy",
+      "element": "dark",
       "effect": {
         "damageType": "none",
         "statusApplied": "weakened",
@@ -96,9 +103,10 @@
     {
       "id": "poison-bolt",
       "name": "Poison Bolt",
-      "description": "Deal 1d4 + 50% ATK magical damage. Poison: 4 dmg/turn for 3 turns.",
+      "description": "Deal 1d4 + 50% ATK dark damage. Poison: 4 dmg/turn for 3 turns.",
       "mpCost": 4,
       "targeting": "single_enemy",
+      "element": "dark",
       "effect": {
         "damageType": "magical",
         "diceExpression": "1d4",
@@ -115,6 +123,7 @@
       "description": "Deal 1d8 + 130% ATK physical damage. High crit chance.",
       "mpCost": 3,
       "targeting": "single_enemy",
+      "element": "physical",
       "effect": {
         "damageType": "physical",
         "diceExpression": "1d8",
@@ -128,6 +137,7 @@
       "description": "Deal 1d6 + 70% ATK physical damage to all enemies.",
       "mpCost": 7,
       "targeting": "all_enemies",
+      "element": "physical",
       "effect": {
         "damageType": "physical",
         "diceExpression": "1d6",
@@ -141,6 +151,7 @@
       "description": "Restore 2d6+5 HP to one ally.",
       "mpCost": 5,
       "targeting": "single_ally",
+      "element": "holy",
       "effect": {
         "damageType": "heal",
         "healDice": "2d6+5"
@@ -152,6 +163,7 @@
       "description": "Restore 1d6+3 HP to all allies.",
       "mpCost": 12,
       "targeting": "all_allies",
+      "element": "holy",
       "effect": {
         "damageType": "heal",
         "healDice": "1d6+3"
@@ -160,9 +172,10 @@
     {
       "id": "holy-light",
       "name": "Holy Light",
-      "description": "Deal 2d6 + ATK magical damage with divine power.",
+      "description": "Deal 2d6 + ATK holy damage with divine power.",
       "mpCost": 6,
       "targeting": "single_enemy",
+      "element": "holy",
       "effect": {
         "damageType": "magical",
         "diceExpression": "2d6",
@@ -176,6 +189,7 @@
       "description": "Grant +4 armor to one ally for 3 turns.",
       "mpCost": 4,
       "targeting": "single_ally",
+      "element": "holy",
       "effect": {
         "damageType": "none",
         "statusApplied": "shielded",
@@ -189,6 +203,7 @@
       "description": "Deal 2d8 + 150% ATK physical damage from the shadows.",
       "mpCost": 5,
       "targeting": "single_enemy",
+      "element": "dark",
       "effect": {
         "damageType": "physical",
         "diceExpression": "2d8",
@@ -199,9 +214,10 @@
     {
       "id": "poison-blade",
       "name": "Poison Blade",
-      "description": "Deal 1d6 + ATK physical damage. Poison: 3 dmg/turn for 2 turns.",
+      "description": "Deal 1d6 + ATK dark damage. Poison: 3 dmg/turn for 2 turns.",
       "mpCost": 3,
       "targeting": "single_enemy",
+      "element": "dark",
       "effect": {
         "damageType": "physical",
         "diceExpression": "1d6",
@@ -218,6 +234,7 @@
       "description": "Grant +5 HP/turn regen to one ally for 3 turns.",
       "mpCost": 6,
       "targeting": "single_ally",
+      "element": "holy",
       "effect": {
         "damageType": "none",
         "statusApplied": "regenerating",
@@ -231,6 +248,7 @@
       "description": "Grant +3 ATK to all allies for 3 turns.",
       "mpCost": 8,
       "targeting": "all_allies",
+      "element": "physical",
       "effect": {
         "damageType": "none",
         "statusApplied": "buffed",
@@ -241,9 +259,10 @@
     {
       "id": "flame-wave",
       "name": "Flame Wave",
-      "description": "Deal 2d8 + 130% ATK magical fire damage to all enemies.",
+      "description": "Deal 2d8 + 130% ATK fire damage to all enemies.",
       "mpCost": 12,
       "targeting": "all_enemies",
+      "element": "fire",
       "effect": {
         "damageType": "magical",
         "diceExpression": "2d8",
@@ -254,9 +273,10 @@
     {
       "id": "lightning-bolt",
       "name": "Lightning Bolt",
-      "description": "Deal 2d8 + 140% ATK magical damage to one enemy.",
+      "description": "Deal 2d8 + 140% ATK lightning damage to one enemy.",
       "mpCost": 7,
       "targeting": "single_enemy",
+      "element": "lightning",
       "effect": {
         "damageType": "magical",
         "diceExpression": "2d8",
@@ -267,9 +287,10 @@
     {
       "id": "blizzard",
       "name": "Blizzard",
-      "description": "Deal 2d6 + ATK magical damage to all enemies. Weakens by 2 for 2 turns.",
+      "description": "Deal 2d6 + ATK ice damage to all enemies. Weakens by 2 for 2 turns.",
       "mpCost": 14,
       "targeting": "all_enemies",
+      "element": "ice",
       "effect": {
         "damageType": "magical",
         "diceExpression": "2d6",
@@ -283,9 +304,10 @@
     {
       "id": "shadow-strike",
       "name": "Shadow Strike",
-      "description": "Deal 2d6 + 130% ATK physical damage. Weakens target by 2 for 2 turns.",
+      "description": "Deal 2d6 + 130% ATK dark damage. Weakens target by 2 for 2 turns.",
       "mpCost": 5,
       "targeting": "single_enemy",
+      "element": "dark",
       "effect": {
         "damageType": "physical",
         "diceExpression": "2d6",
@@ -302,6 +324,7 @@
       "description": "Deal 2d10 + 180% ATK physical damage to one enemy.",
       "mpCost": 8,
       "targeting": "single_enemy",
+      "element": "physical",
       "effect": {
         "damageType": "physical",
         "diceExpression": "2d10",
@@ -315,6 +338,7 @@
       "description": "Deal 1d8 + 90% ATK physical damage to all enemies.",
       "mpCost": 10,
       "targeting": "all_enemies",
+      "element": "physical",
       "effect": {
         "damageType": "physical",
         "diceExpression": "1d8",
@@ -325,9 +349,10 @@
     {
       "id": "divine-smite",
       "name": "Divine Smite",
-      "description": "Deal 2d8 + 120% ATK magical damage to one enemy.",
+      "description": "Deal 2d8 + 120% ATK holy damage to one enemy.",
       "mpCost": 8,
       "targeting": "single_enemy",
+      "element": "holy",
       "effect": {
         "damageType": "magical",
         "diceExpression": "2d8",
@@ -341,6 +366,7 @@
       "description": "Grant +3 armor to all allies for 2 turns.",
       "mpCost": 10,
       "targeting": "all_allies",
+      "element": "holy",
       "effect": {
         "damageType": "none",
         "statusApplied": "shielded",
@@ -354,6 +380,7 @@
       "description": "Grant +5 armor to self for 3 turns.",
       "mpCost": 4,
       "targeting": "self",
+      "element": "physical",
       "effect": {
         "damageType": "none",
         "statusApplied": "shielded",
@@ -367,6 +394,7 @@
       "description": "Deal 3d8 + 200% ATK physical damage. Devastating finisher.",
       "mpCost": 8,
       "targeting": "single_enemy",
+      "element": "physical",
       "effect": {
         "damageType": "physical",
         "diceExpression": "3d8",
@@ -380,6 +408,7 @@
       "description": "Weaken all enemies by 3 for 2 turns.",
       "mpCost": 6,
       "targeting": "all_enemies",
+      "element": "dark",
       "effect": {
         "damageType": "none",
         "statusApplied": "weakened",
@@ -390,9 +419,10 @@
     {
       "id": "arcane-blast",
       "name": "Arcane Blast",
-      "description": "Deal 3d6 + 160% ATK magical damage to one enemy.",
+      "description": "Deal 3d6 + 160% ATK lightning damage to one enemy.",
       "mpCost": 10,
       "targeting": "single_enemy",
+      "element": "lightning",
       "effect": {
         "damageType": "magical",
         "diceExpression": "3d6",

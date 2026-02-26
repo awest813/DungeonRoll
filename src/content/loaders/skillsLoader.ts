@@ -45,12 +45,17 @@ export function loadSkills(rawContent: unknown): Map<string, SkillTemplate> {
       effect.healDice = expectString(effectRaw.healDice, `${effectPath}.healDice`);
     }
 
+    const element = row.element !== undefined
+      ? expectString(row.element, `${path}.element`) as SkillTemplate['element']
+      : 'none' as const;
+
     const skill: SkillTemplate = {
       id: expectString(row.id, `${path}.id`),
       name: expectString(row.name, `${path}.name`),
       description: expectString(row.description, `${path}.description`),
       mpCost: expectNumber(row.mpCost, `${path}.mpCost`),
       targeting: expectString(row.targeting, `${path}.targeting`) as SkillTemplate['targeting'],
+      element,
       effect,
     };
 

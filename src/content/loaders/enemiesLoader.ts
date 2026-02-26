@@ -36,6 +36,8 @@ export function loadEnemies(rawContent: unknown): Map<string, EnemyTemplate> {
       goldReward: expectNumber(row.goldReward, `${path}.goldReward`),
       skillIds,
       aiRole,
+      weakness: row.weakness !== undefined ? expectString(row.weakness, `${path}.weakness`) as EnemyTemplate['weakness'] : undefined,
+      resistance: row.resistance !== undefined ? expectString(row.resistance, `${path}.resistance`) as EnemyTemplate['resistance'] : undefined,
     };
 
     expectUniqueId(enemyMap, enemy, path);

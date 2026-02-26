@@ -30,6 +30,8 @@ function toEnemy(template: EnemyTemplate, instanceIndex: number): Enemy {
     skillIds: [...template.skillIds],
     xpReward: template.xpReward,
     goldReward: template.goldReward,
+    weakness: template.weakness,
+    resistance: template.resistance,
   };
 }
 

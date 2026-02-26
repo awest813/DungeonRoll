@@ -472,7 +472,6 @@ export class GameSession {
       this.gold
     );
 
-    this.combatController.startTurn();
     this.combatController.show();
   }
 

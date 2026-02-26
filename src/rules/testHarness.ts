@@ -61,93 +61,60 @@ export function runCombatTest(): void {
     throw new Error('No enemies in encounter');
   }
 
-  // Turn 1: first party member guards, others attack
-  combat.startTurn();
+  // Start combat with speed-based turn order
+  combat.startCombat();
 
-  combat.executeAction({
-    type: 'guard',
-    actorId: tank.id,
-  });
+  // Run 5 rounds of combat following speed-based turn order
+  for (let round = 0; round < 5 && !combat.isOver(); round++) {
+    console.log(`\n--- Round ${round + 1} ---`);
 
-  combat.executeAction({
-    type: 'attack',
-    actorId: second.id,
-    targetId: firstEnemy.id,
-  });
+    // Process 10 turns per round (enough for all combatants to act multiple times)
+    for (let turn = 0; turn < 10 && !combat.isOver(); turn++) {
+      const actor = combat.getCurrentActor();
+      if (!actor) break;
 
-  combat.executeAction({
-    type: 'attack',
-    actorId: third.id,
-    targetId: firstEnemy.id,
-  });
+      // Simple AI: party attacks, enemies attack
+      if (combat.isPartyMember(actor.id)) {
+        const aliveEnemy = enemies.find(e => e.hp > 0);
+        if (aliveEnemy) {
+          // Randomly guard or attack
+          if (Math.random() < 0.2) {
+            combat.executeAction({
+              type: 'guard',
+              actorId: actor.id,
+            });
+          } else {
+            combat.executeAction({
+              type: 'attack',
+              actorId: actor.id,
+              targetId: aliveEnemy.id,
+            });
+          }
+        }
+      } else {
+        // Enemy attacks
+        const aliveParty = party.find(c => c.hp > 0);
+        if (aliveParty) {
+          combat.executeAction({
+            type: 'attack',
+            actorId: actor.id,
+            targetId: aliveParty.id,
+          });
+        }
+      }
 
-  // First enemy attacks tank
-  combat.executeAction({
-    type: 'attack',
-    actorId: firstEnemy.id,
-    targetId: tank.id,
-  });
-
-  console.log('');
-
-  // Turn 2: Test skill usage
-  combat.startTurn();
-
-  // Tank uses a skill if available
-  const tankSkill = tank.skillIds.find(id => {
-    const s = content.skills.get(id);
-    return s && s.id !== 'basic-attack' && tank.mp >= s.mpCost;
-  });
-
-  if (tankSkill) {
-    combat.executeAction({
-      type: 'skill',
-      actorId: tank.id,
-      skillId: tankSkill,
-      targetId: firstEnemy.id,
-    });
-  } else {
-    combat.executeAction({
-      type: 'attack',
-      actorId: tank.id,
-      targetId: firstEnemy.id,
-    });
+      combat.advanceTurn();
+    }
   }
 
-  // Second party member attacks
-  const aliveEnemy = enemies.find(e => e.hp > 0) ?? firstEnemy;
-  combat.executeAction({
-    type: 'attack',
-    actorId: second.id,
-    targetId: aliveEnemy.id,
-  });
-
-  // Third party member uses item
-  if (third.inventory.length > 0) {
-    combat.executeAction({
-      type: 'item',
-      actorId: third.id,
-      itemId: third.inventory[0].itemId,
-      targetId: third.id,
-    });
+  if (combat.isOver()) {
+    const victor = combat.getVictor();
+    if (victor === 'party') {
+      console.log('\n=== VICTORY ===');
+    } else {
+      console.log('\n=== DEFEAT ===');
+    }
   }
-
-  // Remaining enemies attack
-  for (const enemy of enemies) {
-    if (enemy.hp <= 0) continue;
-    const target = party.find(c => c.hp > 0);
-    if (!target) break;
-    combat.executeAction({
-      type: 'attack',
-      actorId: enemy.id,
-      targetId: target.id,
-    });
-  }
-
-  console.log('');
-
-  // Turn 3: All-out attack
-  combat.startTurn();
 
   for (const char of party) {
     if (char.hp <= 0) continue;

@@ -1,4 +1,4 @@
-import { Character, Enemy, CharacterClass, SkillTargeting, SkillDamageType, StatusType, ItemEffectType, EquipmentSlot, EquipmentRarity } from '../../rules/types';
+import { Character, Enemy, CharacterClass, SkillTargeting, SkillDamageType, StatusType, ItemEffectType, EquipmentSlot, EquipmentRarity, ElementType } from '../../rules/types';
 
 export type EnemyAIRole = 'basic' | 'tank' | 'bruiser' | 'caster' | 'healer' | 'sniper' | 'boss';
 
@@ -14,6 +14,8 @@ export interface EnemyTemplate {
   goldReward: number;
   skillIds: string[];
   aiRole: EnemyAIRole;
+  weakness?: ElementType;
+  resistance?: ElementType;
 }
 
 export interface SkillTemplate {
@@ -22,6 +24,7 @@ export interface SkillTemplate {
   description: string;
   mpCost: number;
   targeting: SkillTargeting;
+  element: ElementType;
   effect: {
     damageType: SkillDamageType;
     diceExpression?: string;
