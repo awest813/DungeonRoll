@@ -1,0 +1,150 @@
+{
+  "events": [
+    {
+      "id": "forgotten-shrine-event",
+      "name": "Ancient Shrine",
+      "description": "A weathered stone shrine stands in a quiet alcove. Ancient runes pulse with a faint blue glow. The air feels charged with old magic.",
+      "flavorText": "Offerings of coin and bone rest at the shrine's base. Whatever deity was worshipped here has not been entirely forgotten.",
+      "choices": [
+        {
+          "id": "pray",
+          "label": "Pray at the Shrine",
+          "description": "Kneel before the ancient altar and hope for divine favor.",
+          "outcomes": [
+            { "chance": 0.3, "effects": [{ "type": "damage", "value": 10, "target": "party" }], "message": "The shrine crackles with dark energy! The party takes 10 damage each." },
+            { "chance": 0.4, "effects": [{ "type": "heal", "value": 25, "target": "party" }], "message": "A warm light washes over the party. Everyone recovers 25 HP." },
+            { "chance": 0.3, "effects": [{ "type": "heal_full", "target": "party" }, { "type": "mp_restore", "value": 15, "target": "party" }], "message": "Divine power surges through the shrine! Full HP restored and 15 MP recovered." }
+          ]
+        },
+        {
+          "id": "donate",
+          "label": "Donate Gold (25g)",
+          "description": "Leave a generous offering at the shrine.",
+          "goldCost": 25,
+          "outcomes": [
+            { "chance": 1.0, "effects": [{ "type": "heal_full", "target": "party" }, { "type": "status", "statusType": "regenerating", "duration": 3, "value": 5, "target": "party" }], "message": "The shrine glows brilliantly! Full HP restored and the party gains regeneration." }
+          ]
+        },
+        {
+          "id": "leave",
+          "label": "Leave Quietly",
+          "description": "Best not to disturb whatever lingers here.",
+          "outcomes": [
+            { "chance": 1.0, "effects": [], "message": "You back away from the shrine and continue onward." }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "merchants-alcove-event",
+      "name": "Traveling Merchant",
+      "description": "A cloaked merchant has set up a makeshift stall in a secured alcove. Potions and curiosities line the shelves.",
+      "flavorText": "\"Welcome, brave adventurers! I have just what you need for the dangers ahead. Fair prices, I assure you.\"",
+      "choices": [
+        {
+          "id": "buy-potions",
+          "label": "Buy Potions (20g)",
+          "description": "Purchase 2 Medium Potions and 1 Antidote.",
+          "goldCost": 20,
+          "outcomes": [
+            { "chance": 1.0, "effects": [{ "type": "item", "itemId": "medium-potion", "quantity": 2 }, { "type": "item", "itemId": "antidote", "quantity": 1 }], "message": "\"Pleasure doing business!\" You receive 2 Medium Potions and an Antidote." }
+          ]
+        },
+        {
+          "id": "buy-ethers",
+          "label": "Buy Ethers (25g)",
+          "description": "Purchase 2 Ethers and 1 Smelling Salts.",
+          "goldCost": 25,
+          "outcomes": [
+            { "chance": 1.0, "effects": [{ "type": "item", "itemId": "ether", "quantity": 2 }, { "type": "item", "itemId": "smelling-salts", "quantity": 1 }], "message": "\"Fine choices!\" You receive 2 Ethers and Smelling Salts." }
+          ]
+        },
+        {
+          "id": "buy-bombs",
+          "label": "Buy Bombs (30g)",
+          "description": "Purchase 3 Bombs for combat use.",
+          "goldCost": 30,
+          "outcomes": [
+            { "chance": 1.0, "effects": [{ "type": "item", "itemId": "bomb", "quantity": 3 }], "message": "\"Handle with care!\" You receive 3 Bombs." }
+          ]
+        },
+        {
+          "id": "leave-merchant",
+          "label": "Browse and Leave",
+          "description": "Nothing catches your eye.",
+          "outcomes": [
+            { "chance": 1.0, "effects": [], "message": "\"Perhaps next time, friends.\" The merchant waves you off." }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "trapped-corridor-event",
+      "name": "Trapped Corridor",
+      "description": "The corridor ahead is lined with suspicious floor tiles and dart holes in the walls. Faded warning runes mark the passage.",
+      "flavorText": "Cobwebs cling to ancient mechanisms. Some traps may have degraded with age, but others look freshly maintained.",
+      "choices": [
+        {
+          "id": "disarm",
+          "label": "Carefully Disarm",
+          "description": "Take your time to disarm the traps. Risky but rewarding.",
+          "outcomes": [
+            { "chance": 0.6, "effects": [{ "type": "gold", "value": 35 }], "message": "Success! You salvage trap components worth 35 gold." },
+            { "chance": 0.4, "effects": [{ "type": "damage", "value": 15, "target": "party" }], "message": "A hidden mechanism triggers! Darts fly from the walls. Party takes 15 damage each." }
+          ]
+        },
+        {
+          "id": "sprint",
+          "label": "Sprint Through",
+          "description": "Run for it! Speed might save you.",
+          "outcomes": [
+            { "chance": 0.45, "effects": [], "message": "The party dashes through before the traps can activate!" },
+            { "chance": 0.55, "effects": [{ "type": "damage", "value": 20, "target": "party" }], "message": "Traps spring as you run! Blades and darts strike the party for 20 damage each." }
+          ]
+        },
+        {
+          "id": "safe-path",
+          "label": "Find Safe Path (15g)",
+          "description": "Pay for a local guide's map of safe tiles.",
+          "goldCost": 15,
+          "outcomes": [
+            { "chance": 1.0, "effects": [{ "type": "gold", "value": 10 }], "message": "The guide's map leads you safely through. You find 10 gold in a hidden alcove along the way." }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "hidden-treasury-event",
+      "name": "Hidden Treasury",
+      "description": "Behind a crumbling wall, you discover a sealed vault. Ancient protective wards still shimmer on the lock.",
+      "flavorText": "Gold coins spill from cracks in the vault door. Whatever is inside must be substantial.",
+      "choices": [
+        {
+          "id": "break-wards",
+          "label": "Break the Wards",
+          "description": "Smash through with brute force. Painful but guaranteed treasure.",
+          "outcomes": [
+            { "chance": 1.0, "effects": [{ "type": "damage", "value": 20, "target": "party" }, { "type": "gold", "value": 50 }, { "type": "item", "itemId": "large-potion", "quantity": 1 }], "message": "The wards explode! The party takes 20 damage each, but you claim 50 gold and a Large Potion." }
+          ]
+        },
+        {
+          "id": "dispel",
+          "label": "Carefully Dispel",
+          "description": "Attempt to unravel the wards without triggering them.",
+          "outcomes": [
+            { "chance": 0.5, "effects": [{ "type": "gold", "value": 40 }, { "type": "item", "itemId": "mega-ether", "quantity": 1 }, { "type": "item", "itemId": "strength-tonic", "quantity": 1 }], "message": "The wards dissolve harmlessly! You claim 40 gold, a Mega Ether, and a Strength Tonic." },
+            { "chance": 0.5, "effects": [{ "type": "damage", "value": 12, "target": "party" }, { "type": "gold", "value": 20 }], "message": "The dispel fails and the wards lash out! Party takes 12 damage each. You salvage 20 gold." }
+          ]
+        },
+        {
+          "id": "loose-coins",
+          "label": "Take Loose Coins",
+          "description": "Grab what's spilling out and move on. Safe but modest.",
+          "outcomes": [
+            { "chance": 1.0, "effects": [{ "type": "gold", "value": 20 }], "message": "You pocket the coins on the ground. 20 gold gained." }
+          ]
+        }
+      ]
+    }
+  ]
+}

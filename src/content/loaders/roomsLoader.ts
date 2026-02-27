@@ -44,18 +44,26 @@ export function loadRooms(rawContent: unknown): Map<string, RoomTemplate> {
       : [];
     const dropTable = dropTableRaw.map((s, i) => expectString(s, `${path}.dropTable[${i}]`));
 
+    const encounters = row.encounters !== undefined
+      ? loadEncounters(row.encounters, `${path}.encounters`)
+      : [];
+
     const room: RoomTemplate = {
       id: expectString(row.id, `${path}.id`),
       name: expectString(row.name, `${path}.name`),
       description: expectString(row.description, `${path}.description`),
       recommendedLevel: expectNumber(row.recommendedLevel, `${path}.recommendedLevel`),
-      encounters: loadEncounters(row.encounters, `${path}.encounters`),
+      encounters,
       nextRooms,
       dropTable,
     };
 
-    if (room.encounters.length === 0) {
-      throw new Error(`${path}.encounters must include at least one encounter`);
+    if (row.narrativeEventId !== undefined) {
+      room.narrativeEventId = expectString(row.narrativeEventId, `${path}.narrativeEventId`);
+    }
+
+    if (room.encounters.length === 0 && !room.narrativeEventId) {
+      throw new Error(`${path} must have at least one encounter or a narrativeEventId`);
     }
 
     expectUniqueId(roomMap, room, path);

@@ -21,7 +21,7 @@
         { "id": "spider-cavern-ambush", "enemyIds": ["giant-spider", "giant-spider", "cave-bat-swarm"] },
         { "id": "spider-cavern-nest", "enemyIds": ["giant-spider", "giant-spider"] }
       ],
-      "nextRooms": ["bone-corridor"],
+      "nextRooms": ["forgotten-shrine", "bone-corridor"],
       "dropTable": ["iron-dagger", "ranger-garb", "wolf-fang-amulet"]
     },
     {
@@ -33,8 +33,17 @@
         { "id": "goblin-den-pack", "enemyIds": ["goblin-grunt", "goblin-grunt", "goblin-shaman"] },
         { "id": "goblin-den-boss", "enemyIds": ["goblin-chief", "goblin-berserker"] }
       ],
-      "nextRooms": ["bone-corridor"],
+      "nextRooms": ["forgotten-shrine", "bone-corridor"],
       "dropTable": ["iron-sword", "leather-armor", "wolf-fang-amulet"]
+    },
+    {
+      "id": "forgotten-shrine",
+      "name": "Forgotten Shrine",
+      "description": "A quiet alcove housing an ancient stone shrine. The air hums with old magic.",
+      "recommendedLevel": 2,
+      "narrativeEventId": "forgotten-shrine-event",
+      "nextRooms": ["bone-corridor"],
+      "dropTable": []
     },
     {
       "id": "bone-corridor",
@@ -45,8 +54,17 @@
         { "id": "bone-corridor-skeletons", "enemyIds": ["skeleton-warrior", "skeleton-archer"] },
         { "id": "bone-corridor-undead", "enemyIds": ["skeleton-warrior", "skeleton-warrior", "skeleton-mage"] }
       ],
-      "nextRooms": ["wolf-den", "bandit-camp"],
+      "nextRooms": ["wolf-den", "bandit-camp", "merchants-alcove"],
       "dropTable": ["chainmail", "apprentice-staff", "mana-crystal"]
+    },
+    {
+      "id": "merchants-alcove",
+      "name": "Merchant's Alcove",
+      "description": "A traveling merchant has secured a small alcove as a temporary shop.",
+      "recommendedLevel": 3,
+      "narrativeEventId": "merchants-alcove-event",
+      "nextRooms": ["wolf-den", "bandit-camp"],
+      "dropTable": []
     },
     {
       "id": "bandit-camp",
@@ -79,8 +97,17 @@
       "encounters": [
         { "id": "troll-bridge-fight", "enemyIds": ["cave-troll"] }
       ],
-      "nextRooms": ["orc-stronghold", "frozen-vault"],
+      "nextRooms": ["orc-stronghold", "frozen-vault", "trapped-corridor"],
       "dropTable": ["steel-longsword", "plate-armor", "guardian-shield"]
+    },
+    {
+      "id": "trapped-corridor",
+      "name": "Trapped Corridor",
+      "description": "A narrow passage rigged with ancient traps. Proceed with extreme caution.",
+      "recommendedLevel": 4,
+      "narrativeEventId": "trapped-corridor-event",
+      "nextRooms": ["orc-stronghold", "frozen-vault"],
+      "dropTable": []
     },
     {
       "id": "orc-stronghold",
@@ -115,8 +142,17 @@
         { "id": "dark-sanctum-guards", "enemyIds": ["dark-knight", "skeleton-mage"] },
         { "id": "dark-sanctum-boss", "enemyIds": ["necromancer", "skeleton-champion", "lich-acolyte"] }
       ],
-      "nextRooms": ["treasure-room", "dragon-lair"],
+      "nextRooms": ["hidden-treasury", "treasure-room", "dragon-lair"],
       "dropTable": ["shadow-daggers", "arcane-vestments", "blood-pendant"]
+    },
+    {
+      "id": "hidden-treasury",
+      "name": "Hidden Treasury",
+      "description": "A concealed vault protected by ancient wards. Treasure glimmers within.",
+      "recommendedLevel": 5,
+      "narrativeEventId": "hidden-treasury-event",
+      "nextRooms": ["dragon-lair"],
+      "dropTable": []
     },
     {
       "id": "treasure-room",

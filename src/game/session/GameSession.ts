@@ -185,6 +185,18 @@ export class GameSession {
       this.game.dispatch('RESOLVE_EVENT');
     });
 
+    this.eventScreen.onChoice((choiceId: string) => {
+      this.handleNarrativeChoice(choiceId);
+    });
+
+    this.eventScreen.onOutcomeDismiss(() => {
+      // Mark the narrative room as visited and return to map
+      if (!this.visitedRoomIds.includes(this.currentRoomId)) {
+        this.visitedRoomIds.push(this.currentRoomId);
+      }
+      this.game.dispatch('COMPLETE_EVENT');
+    });
+
     this.rewardScreen.onContinue(() => {
       this.game.dispatch('CLAIM_REWARD');
     });
@@ -395,7 +407,34 @@ export class GameSession {
 
   private showEventScreen(): void {
     const room = this.content.rooms.get(this.currentRoomId);
-    if (!room || room.encounters.length === 0) return;
+    if (!room) return;
+
+    // Check if this is a narrative event room
+    if (room.narrativeEventId) {
+      const event = this.content.events.get(room.narrativeEventId);
+      if (event) {
+        this.eventScreen.showNarrative({
+          roomName: room.name,
+          roomDescription: room.description,
+          eventName: event.name,
+          eventDescription: event.description,
+          flavorText: event.flavorText,
+          choices: event.choices.map(c => ({
+            id: c.id,
+            label: c.label,
+            description: c.description,
+            goldCost: c.goldCost,
+            enabled: !c.goldCost || this.gold >= c.goldCost,
+          })),
+          roomIndex: this.visitedRoomIds.length,
+          totalRooms: this.content.rooms.size,
+        });
+        return;
+      }
+    }
+
+    // Standard combat event
+    if (room.encounters.length === 0) return;
 
     const encounterIndex = this.currentEncounterIndex % room.encounters.length;
     const encounter = room.encounters[encounterIndex];
@@ -415,6 +454,108 @@ export class GameSession {
       totalRooms: this.content.rooms.size,
       flavorText: '',
     });
+  }
+
+  private handleNarrativeChoice(choiceId: string): void {
+    const room = this.content.rooms.get(this.currentRoomId);
+    if (!room?.narrativeEventId) return;
+
+    const event = this.content.events.get(room.narrativeEventId);
+    if (!event) return;
+
+    const choice = event.choices.find(c => c.id === choiceId);
+    if (!choice) return;
+
+    // Deduct gold cost if any
+    if (choice.goldCost && choice.goldCost > 0) {
+      if (this.gold < choice.goldCost) return;
+      this.gold -= choice.goldCost;
+    }
+
+    // Roll for outcome
+    const roll = Math.random();
+    let cumulative = 0;
+    let selectedOutcome = choice.outcomes[choice.outcomes.length - 1];
+    for (const outcome of choice.outcomes) {
+      cumulative += outcome.chance;
+      if (roll <= cumulative) {
+        selectedOutcome = outcome;
+        break;
+      }
+    }
+
+    if (!selectedOutcome) return;
+
+    // Apply effects to party
+    const party = this.persistentParty;
+    if (party) {
+      for (const effect of selectedOutcome.effects) {
+        switch (effect.type) {
+          case 'gold':
+            this.gold += effect.value ?? 0;
+            break;
+          case 'heal':
+            for (const char of party) {
+              if (char.hp > 0) {
+                char.hp = Math.min(char.maxHp, char.hp + (effect.value ?? 0));
+              }
+            }
+            break;
+          case 'heal_full':
+            for (const char of party) {
+              if (char.hp > 0) {
+                char.hp = char.maxHp;
+              }
+            }
+            break;
+          case 'damage':
+            for (const char of party) {
+              if (char.hp > 0) {
+                char.hp = Math.max(1, char.hp - (effect.value ?? 0));
+              }
+            }
+            break;
+          case 'mp_restore':
+            for (const char of party) {
+              if (char.hp > 0) {
+                char.mp = Math.min(char.maxMp, char.mp + (effect.value ?? 0));
+              }
+            }
+            break;
+          case 'item': {
+            if (!effect.itemId) break;
+            const receiver = party.find(c => c.hp > 0) ?? party[0];
+            const qty = effect.quantity ?? 1;
+            const existing = receiver.inventory.find(e => e.itemId === effect.itemId);
+            if (existing) {
+              existing.quantity += qty;
+            } else {
+              receiver.inventory.push({ itemId: effect.itemId, quantity: qty });
+            }
+            break;
+          }
+          case 'status': {
+            if (!effect.statusType || !effect.duration) break;
+            for (const char of party) {
+              if (char.hp > 0) {
+                const existingStatus = char.statuses.find(s => s.type === effect.statusType);
+                if (!existingStatus) {
+                  char.statuses.push({
+                    type: effect.statusType as any,
+                    duration: effect.duration,
+                    value: effect.value,
+                  });
+                }
+              }
+            }
+            break;
+          }
+        }
+      }
+    }
+
+    // Show outcome message
+    this.eventScreen.showOutcome(selectedOutcome.message);
   }
 
   private startCombatEncounter(): void {

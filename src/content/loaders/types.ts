@@ -103,6 +103,40 @@ export interface RoomTemplate {
   recommendedLevel: number;
   nextRooms: string[];
   dropTable: string[];
+  narrativeEventId?: string;
+}
+
+// Narrative event system (non-combat encounters)
+export interface EventEffectTemplate {
+  type: 'gold' | 'heal' | 'heal_full' | 'damage' | 'mp_restore' | 'item' | 'status' | 'nothing';
+  value?: number;
+  target?: 'party' | 'single';
+  itemId?: string;
+  quantity?: number;
+  statusType?: string;
+  duration?: number;
+}
+
+export interface EventOutcomeTemplate {
+  chance: number;
+  effects: EventEffectTemplate[];
+  message: string;
+}
+
+export interface EventChoiceTemplate {
+  id: string;
+  label: string;
+  description: string;
+  goldCost?: number;
+  outcomes: EventOutcomeTemplate[];
+}
+
+export interface NarrativeEventTemplate {
+  id: string;
+  name: string;
+  description: string;
+  flavorText: string;
+  choices: EventChoiceTemplate[];
 }
 
 export interface GameContent {
@@ -112,6 +146,7 @@ export interface GameContent {
   equipment: Map<string, EquipmentTemplate>;
   rooms: Map<string, RoomTemplate>;
   classes: Map<CharacterClass, ClassTemplate>;
+  events: Map<string, NarrativeEventTemplate>;
 }
 
 export interface EncounterSetup {

@@ -4,6 +4,7 @@ import roomsRaw from '../rooms.json';
 import skillsRaw from '../skills.json';
 import classesRaw from '../classes.json';
 import equipmentRaw from '../equipment.json';
+import eventsRaw from '../events.json';
 import { Character, Enemy, CharacterClass } from '../../rules/types';
 import { loadEnemies } from './enemiesLoader';
 import { loadItems } from './itemsLoader';
@@ -11,6 +12,7 @@ import { loadRooms } from './roomsLoader';
 import { loadSkills } from './skillsLoader';
 import { loadClasses } from './classesLoader';
 import { loadEquipment } from './equipmentLoader';
+import { loadEvents } from './eventsLoader';
 import { EncounterSetup, GameContent, EnemyTemplate, ClassTemplate } from './types';
 
 function toEnemy(template: EnemyTemplate, instanceIndex: number): Enemy {
@@ -46,6 +48,7 @@ export function loadGameContent(): GameContent {
   const rooms = loadRooms(roomsRaw);
   const classes = loadClasses(classesRaw);
   const equipment = loadEquipment(equipmentRaw);
+  const events = loadEvents(eventsRaw);
 
   for (const room of rooms.values()) {
     for (const encounter of room.encounters) {
@@ -57,9 +60,14 @@ export function loadGameContent(): GameContent {
         }
       }
     }
+    if (room.narrativeEventId && !events.has(room.narrativeEventId)) {
+      throw new Error(
+        `rooms.json room "${room.id}" references missing event "${room.narrativeEventId}"`
+      );
+    }
   }
 
-  return { enemies, skills, items, equipment, rooms, classes };
+  return { enemies, skills, items, equipment, rooms, classes, events };
 }
 
 export function createEncounterFromRoom(

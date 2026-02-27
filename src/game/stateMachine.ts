@@ -5,6 +5,7 @@ export type GameEvent =
   | 'START_RUN'
   | 'ENTER_ROOM'
   | 'RESOLVE_EVENT'
+  | 'COMPLETE_EVENT'
   | 'WIN_COMBAT'
   | 'LOSE_COMBAT'
   | 'CLAIM_REWARD';
@@ -85,19 +86,21 @@ export function createStateMachine(
         return { ok: true, nextState: 'EVENT' };
 
       case 'EVENT':
-        if (event !== 'RESOLVE_EVENT') {
-          return {
-            ok: false,
-            error: {
-              code: 'INVALID_TRANSITION',
-              message: `Event ${event} is not valid while in ${state}`,
-              state,
-              event,
-            },
-          };
+        if (event === 'RESOLVE_EVENT') {
+          return { ok: true, nextState: 'COMBAT' };
         }
-
-        return { ok: true, nextState: 'COMBAT' };
+        if (event === 'COMPLETE_EVENT') {
+          return { ok: true, nextState: 'MAP' };
+        }
+        return {
+          ok: false,
+          error: {
+            code: 'INVALID_TRANSITION',
+            message: `Event ${event} is not valid while in ${state}`,
+            state,
+            event,
+          },
+        };
 
       case 'COMBAT':
         if (event !== 'WIN_COMBAT' && event !== 'LOSE_COMBAT') {

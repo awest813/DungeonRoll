@@ -46,6 +46,26 @@ Track of what's done and what comes next.
 - Encounter counter for multi-wave rooms (Encounter 1/2, 2/2)
 - Difficulty label per encounter (Easy / Medium / Hard / Deadly)
 
+### Phase 6 — Crimson Shroud Combat Redesign
+- Individual speed-based turn order: each combatant (party + enemy) acts in speed-sorted order per round
+- Turn order bar in combat UI showing upcoming actors with active-turn highlight
+- Bonus dice pool: shared party resource (max 10), earned from element chains, spent on any attack roll
+- Element system: 6 element types (fire, ice, lightning, earth, holy, dark) on skills
+- Element chain / Gift mechanic: consecutive same-element attacks build a chain multiplier (1.25×, 1.5×, 2.0×) and award bonus dice
+- Elemental weakness/resistance on enemies: weakness = 1.5× damage, resistance = 0.5× damage
+- Dice roll visualization: individual die faces shown in combat log
+- Enemy AI updated for individual turn model (acts on its own turn, not in batch)
+- CombatUIController rewritten for per-actor flow with auto-advancing enemy turns
+
+### Phase 7 — Narrative Events
+- Non-combat room events: 4 narrative event types (shrine, merchant, trap corridor, hidden treasury)
+- Choice-based event UI with 3–4 options per event, descriptions, and gold cost indicators
+- Probabilistic outcomes: weighted random selection from multiple possible results per choice
+- Event effects: gold gain/loss, HP healing (flat or full), damage, MP restore, item grants, status effects
+- 4 new dungeon rooms (16 total): Forgotten Shrine, Merchant's Alcove, Trapped Corridor, Hidden Treasury
+- State machine extended with `COMPLETE_EVENT` transition (`EVENT → MAP`) for non-combat resolution
+- EventScreen dual-mode: combat preview (orange) vs. narrative choices (blue) with outcome display
+
 ### Bug Fixes Applied
 - **Defeat screen data** — state was reset before `dispatch('LOSE_COMBAT')`; fixed ordering
 - **`awardXp` type cast** — changed from `as any` to proper `Map<CharacterClass, ClassTemplate>`
@@ -75,7 +95,7 @@ Track of what's done and what comes next.
 
 ## Planned
 
-### Next — Phase 6: Game Feel
+### Next — Phase 8: Game Feel
 - [ ] Sound effects: attack hit, spell cast, level-up, enemy death, door open
 - [ ] Ambient dungeon music (looping, mood-matched per zone)
 - [ ] Screen transitions: fade/slide between MAP → EVENT → COMBAT
@@ -83,34 +103,27 @@ Track of what's done and what comes next.
 - [ ] Damage floater numbers above units
 - [ ] Idle animations for party and enemy meshes
 
-### Phase 7: Narrative Events
-- [ ] Non-combat room events: treasure chests, merchants, shrines, traps, lore scrolls
-- [ ] Random event pool per room type (3 possible outcomes per trigger)
-- [ ] Merchant NPC: buy/sell items and equipment with gold
-- [ ] Shrine: trade HP for a stat boost, or pray for a random blessing
-- [ ] Trap rooms: skill check to disarm or take party damage
-
-### Phase 8: Settings & Accessibility
+### Phase 9: Settings & Accessibility
 - [ ] Settings panel: master volume, music volume, SFX volume
 - [ ] Text size options (small / normal / large)
 - [ ] Color-blind mode (recolor status/rarity indicators)
 - [ ] Keyboard rebinding (via keybindings config)
 - [ ] Skip animations toggle
 
-### Phase 9: Save & Persistence
+### Phase 10: Save & Persistence
 - [ ] `localStorage` save slot: persist run-in-progress across page refresh
 - [ ] Multiple save slots (up to 3 runs)
 - [ ] Run history: show last 5 completed/failed runs with stats
 - [ ] Bestiary: track which enemies have been fought
 
-### Phase 10: Roguelite Layer
+### Phase 11: Roguelite Layer
 - [ ] Unlockable classes (start locked, unlock by achieving certain conditions)
 - [ ] Meta-upgrades: persistent gold bank, buy starting bonuses between runs
 - [ ] Difficulty tiers: Normal / Hard / Nightmare (enemy stat scaling)
 - [ ] Daily run seed: share a seed string, compare scores on a leaderboard
 - [ ] Achievements: first clear, no-death run, all-class run, speed run
 
-### Phase 11: Content Expansion
+### Phase 12: Content Expansion
 - [ ] 3 more classes: Bard (group buffs), Necromancer (summons), Monk (unarmored tanking)
 - [ ] 2 additional dungeons: Ice Citadel, Volcanic Depths — each 10–14 rooms
 - [ ] Boss-only challenge mode: 5-boss gauntlet, no map screen between
@@ -118,7 +131,7 @@ Track of what's done and what comes next.
 - [ ] Dual-boss final encounters (two bosses act together)
 - [ ] Crafting: combine dropped materials to forge equipment
 
-### Phase 12: Mobile & Deployment
+### Phase 13: Mobile & Deployment
 - [ ] Responsive layout for portrait phone screens
 - [ ] Touch controls: tap to select, swipe combat log
 - [ ] PWA manifest for "Add to Home Screen" install
@@ -131,7 +144,7 @@ Track of what's done and what comes next.
 
 | Area | Current Behavior | Future Improvement |
 |---|---|---|
-| Dead party members | Stay dead for the run; no revive items | Add revive mechanics (Phoenix Down-style) in Phase 7 |
+| Dead party members | Stay dead for the run; no revive items | Add revive mechanics (Phoenix Down-style) in a future phase |
 | Enemy skill targeting | Boss `war-cry` uses `all_allies`; `targetId` is ignored | Full skill animation routing per targeting type |
 | Equipment bonus precision | Truthiness guard skips 0-value bonuses | Explicit `!== undefined` check if 0-value items are ever added |
-| Buff items in combat | Items with `type: buff` permanently raise `char.attack` (capped at +20) | Track as a timed status in Phase 6 |
+| Buff items in combat | Items with `type: buff` permanently raise `char.attack` (capped at +20) | Track as a timed status in a future phase |

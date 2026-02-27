@@ -27,14 +27,19 @@ npm run preview      # http://localhost:4173
 ## Gameplay
 
 1. **Party Select** — Choose 3 of 5 classes (Knight, Mage, Ranger, Cleric, Rogue).
-2. **Dungeon Map** — Navigate a 12-room branching dungeon. Choose your path at crossroads.
+2. **Dungeon Map** — Navigate a 16-room branching dungeon. Choose your path at crossroads.
    - Rest to recover HP/MP (costs gold)
    - Manage equipment drops
    - Use items from inventory
    - Click a party member to inspect full stats and skills
-3. **Event Screen** — Preview enemies before committing to fight.
-4. **Combat** — Turn-based, speed-ordered. Choose Attack / Guard / Skill / Item each turn.
-   - 30 skills across 5 classes (damage, heal, AoE, buffs, status effects)
+3. **Events** — Rooms contain either combat encounters or narrative events.
+   - **Combat encounters**: Preview enemies before committing to fight.
+   - **Narrative events**: Shrines, merchants, traps, and treasure rooms with branching choices and probabilistic outcomes.
+4. **Combat** — Individual speed-based turns. Choose Attack / Guard / Skill / Item on your turn.
+   - 30 skills across 5 classes with 6 element types (fire, ice, lightning, earth, holy, dark)
+   - Bonus dice pool: earn dice through element chains, spend them to boost attacks
+   - Element chain system: consecutive same-element attacks build multipliers (up to 2×)
+   - Elemental weakness/resistance on enemies for strategic targeting
    - Enemy AI with 7 roles: basic, tank, bruiser, caster, healer, sniper, boss
    - Status effects: poison, stun, buff, weaken, shield, regen
 5. **Reward** — XP, gold, item drops, equipment drops, level-up details.
@@ -50,7 +55,12 @@ npm run preview      # http://localhost:4173
 - Data-driven content: all enemies, skills, items, equipment, and rooms are JSON
 
 ### Combat
-- Speed-based turn order (higher speed acts first)
+- Individual speed-based turn order: each combatant (party + enemy) acts in speed-sorted order
+- Turn order bar showing upcoming actors with active-turn highlight
+- Bonus dice pool: shared party resource (max 10), earned from element chains, spent on any attack
+- 6 element types on skills (fire, ice, lightning, earth, holy, dark)
+- Element chain / Gift mechanic: consecutive same-element attacks build a multiplier (1.25×, 1.5×, 2.0×)
+- Elemental weakness (1.5× damage) and resistance (0.5× damage) on enemies
 - Armor reduces flat damage; guarding doubles armor for that hit
 - Skills cost MP; targeting types: single enemy, all enemies, single ally, all allies, self
 - Items usable in combat (potions restore HP/MP, tonics buff ATK, antidotes cure status)
@@ -64,7 +74,9 @@ npm run preview      # http://localhost:4173
 - Equipment bonuses apply/remove cleanly on equip/unequip from the map screen
 
 ### Dungeon
-- 12 rooms in a directed acyclic graph (DAG) — multiple paths to the final boss
+- 16 rooms in a directed acyclic graph (DAG) — multiple paths to the final boss
+- 4 narrative event rooms: shrine, merchant, trap corridor, hidden treasury
+- Choice-based narrative events with probabilistic outcomes and gold costs
 - Multi-encounter rooms (some rooms have 2 waves; clear both to advance)
 - Encounter difficulty rating (Easy / Medium / Hard / Deadly) based on level delta and HP
 - SVG minimap with fog-of-war: visited (green), current (orange), available (amber), unknown
@@ -76,7 +88,9 @@ npm run preview      # http://localhost:4173
 | Enemy types | 26 |
 | Skills | 30 |
 | Equipment pieces | 31 |
-| Dungeon rooms | 12 |
+| Dungeon rooms | 16 (12 combat + 4 narrative) |
+| Narrative events | 4 |
+| Element types | 6 |
 | Enemy AI roles | 7 |
 
 ---
@@ -108,7 +122,7 @@ src/
       MainMenuScreen.ts        # Title / new game
       PartySelectScreen.ts     # Class picker (choose 3 of 5)
       DungeonMapScreen.ts      # Between-combat hub: minimap, party, equipment
-      EventScreen.ts           # Pre-combat room preview
+      EventScreen.ts           # Combat preview or narrative event choices
       RewardScreen.ts          # Post-combat XP / loot / level-up
       DefeatScreen.ts          # Run-over summary
       CharacterDetailPanel.ts  # Per-character stats, equipment, and skills overlay
@@ -122,8 +136,8 @@ src/
     skills.json                # 30 skills with targeting, damage, and status effects
     items.json                 # Consumable items
     equipment.json             # 31 equipment pieces with rarity and class restrictions
-    rooms.json                 # 12 rooms with branching connections and drop tables
-    encounters.json            # Encounter wave definitions per room
+    events.json                # 4 narrative events with choices and outcomes
+    rooms.json                 # 16 rooms with branching connections and drop tables
 ```
 
 ---

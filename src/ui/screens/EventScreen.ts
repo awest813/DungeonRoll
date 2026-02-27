@@ -1,4 +1,4 @@
-// Pre-combat event screen - shows room narrative before entering battle
+// Event screen - pre-combat preview OR narrative event with choices
 
 export interface EventData {
   roomName: string;
@@ -9,11 +9,34 @@ export interface EventData {
   flavorText: string;
 }
 
+export interface NarrativeEventChoice {
+  id: string;
+  label: string;
+  description: string;
+  goldCost?: number;
+  enabled: boolean;
+}
+
+export interface NarrativeEventData {
+  roomName: string;
+  roomDescription: string;
+  eventName: string;
+  eventDescription: string;
+  flavorText: string;
+  choices: NarrativeEventChoice[];
+  roomIndex: number;
+  totalRooms: number;
+}
+
 export interface EventScreen {
   show(data: EventData): void;
+  showNarrative(data: NarrativeEventData): void;
+  showOutcome(message: string): void;
   hide(): void;
   destroy(): void;
   onProceed(callback: () => void): void;
+  onChoice(callback: (choiceId: string) => void): void;
+  onOutcomeDismiss(callback: () => void): void;
 }
 
 const ROOM_FLAVOR: Record<string, string> = {
@@ -46,6 +69,8 @@ export function createEventScreen(): EventScreen {
   const panel = document.createElement('div');
   panel.style.cssText = `
     width: 560px;
+    max-height: 90vh;
+    overflow-y: auto;
     background: rgba(20, 20, 35, 0.95);
     border: 2px solid rgba(255, 165, 0, 0.7);
     border-radius: 6px;
@@ -58,8 +83,10 @@ export function createEventScreen(): EventScreen {
   document.body.appendChild(container);
 
   let proceedCallback: (() => void) | null = null;
+  let choiceCallback: ((choiceId: string) => void) | null = null;
+  let outcomeDismissCallback: (() => void) | null = null;
 
-  function render(data: EventData) {
+  function renderCombatEvent(data: EventData) {
     const flavor = ROOM_FLAVOR[data.roomName.toLowerCase().replace(/[^a-z-]/g, '')] ??
                    ROOM_FLAVOR[Object.keys(ROOM_FLAVOR).find(k => data.roomName.toLowerCase().includes(k.split('-')[0])) ?? ''] ??
                    data.flavorText;
@@ -154,10 +181,149 @@ export function createEventScreen(): EventScreen {
     }
   }
 
+  function renderNarrativeEvent(data: NarrativeEventData) {
+    contentArea.innerHTML = `
+      <div style="
+        background: linear-gradient(135deg, rgba(100, 180, 255, 0.2), rgba(20, 20, 30, 0.9));
+        padding: 24px;
+        border-bottom: 1px solid rgba(100, 180, 255, 0.3);
+        border-radius: 5px 5px 0 0;
+        text-align: center;
+      ">
+        <div style="font-size: 11px; color: #888; letter-spacing: 3px; margin-bottom: 6px;">
+          ROOM ${data.roomIndex + 1} OF ${data.totalRooms}
+        </div>
+        <div style="font-size: 26px; font-weight: bold; color: #64b5f6; text-shadow: 0 0 12px rgba(100, 180, 255, 0.3); letter-spacing: 3px;">
+          ${data.eventName}
+        </div>
+        <div style="font-size: 12px; color: #ccc; margin-top: 6px;">
+          ${data.eventDescription}
+        </div>
+      </div>
+
+      <div style="padding: 24px;">
+        <div style="
+          font-size: 13px;
+          color: #aaa;
+          line-height: 1.7;
+          margin-bottom: 24px;
+          font-style: italic;
+          padding: 14px;
+          border-left: 3px solid rgba(100, 180, 255, 0.4);
+          background: rgba(100, 180, 255, 0.05);
+          border-radius: 0 4px 4px 0;
+        ">
+          ${data.flavorText}
+        </div>
+
+        <div style="font-size: 11px; color: #64b5f6; letter-spacing: 2px; margin-bottom: 12px;">CHOOSE YOUR ACTION</div>
+        <div id="event-choices-container" style="display: flex; flex-direction: column; gap: 10px;"></div>
+      </div>
+    `;
+
+    const choicesContainer = document.getElementById('event-choices-container');
+    if (!choicesContainer) return;
+
+    data.choices.forEach(choice => {
+      const btn = document.createElement('button');
+      btn.style.cssText = `
+        width: 100%;
+        padding: 14px 20px;
+        font-size: 13px;
+        font-family: 'Courier New', monospace;
+        border: 1px solid ${choice.enabled ? 'rgba(100, 180, 255, 0.5)' : 'rgba(100, 100, 100, 0.3)'};
+        border-radius: 6px;
+        background: ${choice.enabled ? 'rgba(100, 180, 255, 0.1)' : 'rgba(50, 50, 50, 0.2)'};
+        color: ${choice.enabled ? '#e0e0e0' : '#666'};
+        cursor: ${choice.enabled ? 'pointer' : 'not-allowed'};
+        transition: all 0.2s ease;
+        text-align: left;
+        opacity: ${choice.enabled ? '1' : '0.6'};
+      `;
+      btn.innerHTML = `
+        <div style="font-weight: bold; margin-bottom: 4px; color: ${choice.enabled ? '#64b5f6' : '#666'};">
+          ${choice.label}
+        </div>
+        <div style="font-size: 11px; color: ${choice.enabled ? '#aaa' : '#555'};">
+          ${choice.description}${!choice.enabled && choice.goldCost ? ' (Not enough gold)' : ''}
+        </div>
+      `;
+
+      if (choice.enabled) {
+        btn.addEventListener('mouseenter', () => {
+          btn.style.background = 'rgba(100, 180, 255, 0.25)';
+          btn.style.borderColor = 'rgba(100, 180, 255, 0.8)';
+        });
+        btn.addEventListener('mouseleave', () => {
+          btn.style.background = 'rgba(100, 180, 255, 0.1)';
+          btn.style.borderColor = 'rgba(100, 180, 255, 0.5)';
+        });
+        btn.addEventListener('click', () => {
+          if (choiceCallback) choiceCallback(choice.id);
+        });
+      }
+
+      choicesContainer.appendChild(btn);
+    });
+  }
+
+  function renderOutcome(message: string) {
+    contentArea.innerHTML = `
+      <div style="padding: 30px; text-align: center;">
+        <div style="
+          font-size: 14px;
+          color: #e0e0e0;
+          line-height: 1.8;
+          margin-bottom: 30px;
+          padding: 20px;
+          border: 1px solid rgba(100, 180, 255, 0.3);
+          border-radius: 6px;
+          background: rgba(100, 180, 255, 0.05);
+        ">
+          ${message}
+        </div>
+        <button id="event-outcome-btn" style="
+          width: 200px;
+          padding: 14px 32px;
+          font-size: 14px;
+          font-family: 'Courier New', monospace;
+          font-weight: bold;
+          letter-spacing: 2px;
+          border: 2px solid #64b5f6;
+          border-radius: 6px;
+          background: rgba(100, 180, 255, 0.15);
+          color: #64b5f6;
+          cursor: pointer;
+          transition: all 0.25s ease;
+        ">CONTINUE</button>
+      </div>
+    `;
+
+    const btn = document.getElementById('event-outcome-btn');
+    if (btn) {
+      btn.addEventListener('mouseenter', () => {
+        btn.style.background = 'rgba(100, 180, 255, 0.3)';
+      });
+      btn.addEventListener('mouseleave', () => {
+        btn.style.background = 'rgba(100, 180, 255, 0.15)';
+      });
+      btn.addEventListener('click', () => {
+        if (outcomeDismissCallback) outcomeDismissCallback();
+      });
+    }
+  }
+
   return {
     show(data) {
-      render(data);
+      renderCombatEvent(data);
       container.style.display = 'flex';
+    },
+    showNarrative(data) {
+      renderNarrativeEvent(data);
+      container.style.display = 'flex';
+    },
+    showOutcome(message) {
+      renderOutcome(message);
     },
     hide() {
       if (container.style.display !== 'none' && container.style.display !== '') {
@@ -175,6 +341,12 @@ export function createEventScreen(): EventScreen {
     },
     onProceed(callback) {
       proceedCallback = callback;
+    },
+    onChoice(callback) {
+      choiceCallback = callback;
+    },
+    onOutcomeDismiss(callback) {
+      outcomeDismissCallback = callback;
     },
   };
 }
