@@ -25,6 +25,7 @@ export interface CombatUISkill {
   name: string;
   mpCost: number;
   description: string;
+  targeting: 'single_enemy' | 'all_enemies' | 'single_ally' | 'all_allies' | 'self';
 }
 
 export interface CombatUIItem {
@@ -176,6 +177,7 @@ export function createCombatUI(): CombatUI {
   let endTurnCallback: (() => void) | null = null;
   let selectedHeroIndex = 0;
   let selectedEnemyIndex = 0;
+  let selectedAllyIndex = 0;
   let actionsEnabled = true;
   let currentSkills: CombatUISkill[] = [];
   let currentItems: CombatUIItem[] = [];
@@ -251,8 +253,29 @@ export function createCombatUI(): CombatUI {
         <button id="end-turn-btn" class="action-btn" style="${actionBtnStyle('#607D8B')}" ${!actionsEnabled ? 'disabled' : ''}>END TURN</button>
       `;
     } else if (actionMode === 'skills') {
+      const casterSelector = `<div style="margin-bottom: 8px;">
+          <div style="font-size: 11px; color: #aaa; margin-bottom: 4px;">Caster:</div>
+          ${heroSelector}
+        </div>`;
+
+      const allySelector = `<div style="margin-bottom: 8px;">
+          <div style="font-size: 11px; color: #aaa; margin-bottom: 4px;">Ally Target:</div>
+          ${currentParty
+            .map(
+              (char, index) => `
+              <button class="ally-select" data-index="${index}" style="
+                padding: 4px 10px; margin: 2px;
+                background: ${selectedAllyIndex === index ? '#4CAF50' : 'rgba(76, 175, 80, 0.3)'};
+                color: white; border: 1px solid #4CAF50; border-radius: 3px;
+                font-size: 11px; font-family: 'Courier New', monospace; cursor: pointer;
+                ${char.hp <= 0 ? 'opacity: 0.3; cursor: not-allowed;' : ''}
+              ">${char.name}</button>`
+            )
+            .join('')}
+        </div>`;
+
       const skillButtons = currentSkills.map(skill => `
-        <button class="skill-btn" data-skill-id="${skill.id}" style="
+        <button class="skill-btn" data-skill-id="${skill.id}" data-targeting="${skill.targeting}" style="
           width: 100%; padding: 8px; margin-bottom: 4px;
           background: ${currentMp >= skill.mpCost ? 'rgba(156, 39, 176, 0.4)' : 'rgba(100, 100, 100, 0.3)'};
           color: ${currentMp >= skill.mpCost ? 'white' : '#888'};
@@ -269,7 +292,9 @@ export function createCombatUI(): CombatUI {
         <div style="margin-bottom: 8px;">
           <button id="back-btn" style="${actionBtnStyle('#607D8B')}">BACK</button>
         </div>
+        ${casterSelector}
         ${enemySelector}
+        ${allySelector}
         ${skillButtons}
       `;
     } else if (actionMode === 'items') {
@@ -314,6 +339,16 @@ export function createCombatUI(): CombatUI {
       });
     });
 
+    actionButtons.querySelectorAll('.ally-select').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const idx = parseInt((btn as HTMLElement).dataset.index!, 10);
+        if (currentParty[idx]?.hp > 0) {
+          selectedAllyIndex = idx;
+          renderActionButtons();
+        }
+      });
+    });
+
     document.getElementById('attack-btn')?.addEventListener('click', () => {
       if (actionsEnabled && attackCallback) attackCallback(selectedHeroIndex, selectedEnemyIndex);
     });
@@ -339,8 +374,16 @@ export function createCombatUI(): CombatUI {
     actionButtons.querySelectorAll('.skill-btn').forEach(btn => {
       btn.addEventListener('click', () => {
         if (!actionsEnabled) return;
-        const skillId = (btn as HTMLElement).dataset.skillId!;
-        if (skillCallback) skillCallback(selectedHeroIndex, skillId, selectedEnemyIndex, false);
+        const element = btn as HTMLElement;
+        const skillId = element.dataset.skillId!;
+        const targeting = element.dataset.targeting;
+        const isAlly = targeting === 'single_ally' || targeting === 'all_allies' || targeting === 'self';
+        const targetIndex = targeting === 'single_ally' || targeting === 'all_allies'
+          ? selectedAllyIndex
+          : targeting === 'self'
+            ? selectedHeroIndex
+            : selectedEnemyIndex;
+        if (skillCallback) skillCallback(selectedHeroIndex, skillId, targetIndex, isAlly);
       });
     });
 
@@ -373,6 +416,7 @@ export function createCombatUI(): CombatUI {
       actionMode = 'main';
       selectedHeroIndex = 0;
       selectedEnemyIndex = 0;
+      selectedAllyIndex = 0;
       renderActionButtons();
     },
 
@@ -385,6 +429,10 @@ export function createCombatUI(): CombatUI {
       if (party[selectedHeroIndex]?.hp <= 0) {
         const firstAlive = party.findIndex(c => c.hp > 0);
         if (firstAlive >= 0) selectedHeroIndex = firstAlive;
+      }
+      if (party[selectedAllyIndex]?.hp <= 0) {
+        const firstAlive = party.findIndex(c => c.hp > 0);
+        if (firstAlive >= 0) selectedAllyIndex = firstAlive;
       }
 
       const partyList = document.getElementById('party-list');

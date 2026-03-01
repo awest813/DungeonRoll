@@ -107,7 +107,7 @@ export class CombatUIController {
       if (skill.targeting === 'single_enemy') {
         targetId = this.enemies[targetIndex]?.id;
       } else if (skill.targeting === 'single_ally') {
-        targetId = this.party[heroIndex]?.id;
+        targetId = this.party[targetIndex]?.id;
       } else if (skill.targeting === 'self') {
         targetId = hero.id;
       }
@@ -273,6 +273,7 @@ export class CombatUIController {
           name: s.name,
           mpCost: s.mpCost,
           description: s.description,
+          targeting: s.targeting,
         }));
       this.ui.updateSkills(skills, selectedHero.mp);
 
