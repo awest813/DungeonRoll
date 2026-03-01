@@ -25,6 +25,10 @@ export class Game {
       }
     });
 
+    this.ui.onResetRun(() => {
+      this.resetToTitle();
+    });
+
     // Initialize UI with current state
     this.ui.updateState(this.stateMachine.currentState);
   }
@@ -74,6 +78,29 @@ export class Game {
         return 'START_RUN';
       case 'COMBAT':
         return null;
+    }
+  }
+
+  private resetToTitle(): void {
+    const state = this.stateMachine.currentState;
+
+    if (state === 'COMBAT') {
+      return;
+    }
+
+    if (state === 'TITLE') {
+      return;
+    }
+
+    if (state === 'DEFEAT') {
+      this.dispatch('START_RUN');
+    }
+
+    this.stateMachine = createStateMachine('TITLE');
+    this.ui.updateState(this.stateMachine.currentState);
+
+    if (this.onStateChangeCallback) {
+      this.onStateChangeCallback(this.stateMachine.currentState);
     }
   }
 }
